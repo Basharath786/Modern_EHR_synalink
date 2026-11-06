@@ -21,7 +21,7 @@ export default function Children() {
   async function save(e) {
     e.preventDefault(); setErr(""); setBusy(true);
     const fd = new FormData(); Object.entries(f).forEach(([k, v]) => fd.append(k, v)); past.forEach((x) => fd.append("past_history", x)); drugs.forEach((x) => fd.append("drug_history", x)); if (file) fd.append("govtidfile", file);
-    const { data: r } = await api("patient/children", { method: "POST", body: fd });
+    const { data: r } = await api("patient/children", { method: "POST", body: fd }); if (r?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setBusy(false);
     if (r.status === "registered") { setOpen(false); setF(blank); setPast([]); setDrugs([]); setFile(null); setOk(`Child registration successful! Child ID: ${r.child_id}`); reload(); }
     else setErr(ERR[r.status] || r.message || "Registration failed! Please try again.");

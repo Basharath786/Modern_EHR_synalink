@@ -9,7 +9,7 @@ export default function CancelModal({ appt, endpoint, reasons, onClose, onDone }
   const [reason, setReason] = useState(""); const [busy, setBusy] = useState(false); const [err, setErr] = useState("");
   async function go() {
     setBusy(true); setErr("");
-    const { data } = await api(endpoint, { method: "POST", body: { reason } });
+    const { data } = await api(endpoint, { method: "POST", body: { reason } }); if (data?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setBusy(false);
     if (data.status === "cancelled") { setReason(""); onDone(); } else setErr(MSG[data.status] || "Could not cancel.");
   }

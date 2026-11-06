@@ -14,7 +14,7 @@ export default function AdminRegister() {
   async function submit(e) {
     e.preventDefault(); setErr(""); setBusy(true);
     const fd = new FormData(); Object.entries(f).forEach(([k, v]) => fd.append(k, v)); if (file) fd.append("govtidfile", file);
-    const { data } = await api("public/register/internal-admin", { method: "POST", body: fd });
+    const { data } = await api("public/register/internal-admin", { method: "POST", body: fd }); if (data?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setBusy(false);
     if (data.status === "registered") setDone(data.message);
     else if (data.errors) { setErrors(data.errors); setErr("Please correct the highlighted fields."); }

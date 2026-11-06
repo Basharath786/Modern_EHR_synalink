@@ -23,7 +23,7 @@ export default function OrgRegister({ kind }) {
     e.preventDefault(); setErr(""); setBusy(true);
     const fd = new FormData(); Object.entries(f).forEach(([k, v]) => fd.append(k, v)); spec.forEach((s) => fd.append("specialities", s));
     Object.entries(files).forEach(([k, v]) => v && fd.append(k, v));
-    const { data } = await api(`public/register/${kind}`, { method: "POST", body: fd });
+    const { data } = await api(`public/register/${kind}`, { method: "POST", body: fd }); if (data?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setBusy(false);
     if (data.status === "registered") setDone(data);
     else if (data.errors) { setErrors(data.errors); setErr("Please correct the highlighted fields."); }

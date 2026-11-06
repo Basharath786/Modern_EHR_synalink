@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api } from "../../../api";
+import { api, ask } from "../../../api";
 import TypeAhead from "../../../components/TypeAhead";
 import { Badge, Modal, Tabs } from "../../../components/ui";
 
@@ -16,12 +16,12 @@ function Loadouts({ kind, problems, onApply, current, readOnly }) {
   useEffect(() => { load(); }, [problem]); // eslint-disable-line react-hooks/exhaustive-deps
   async function save() {
     setMsg("");
-    const { data } = await api(`doctor/loadouts/${kind}`, { method: "POST", body: { loadout_name: name.trim(), problem_name: problem, items: current } });
+    const { data } = await api(`doctor/loadouts/${kind}`, { method: "POST", body: { loadout_name: name.trim(), problem_name: problem, items: current } }); if (data?.status === "cancelled_by_user") { return; }
     if (data.status === "saved") { setName(""); load(); setMsg("Loadout saved."); }
     else setMsg(data.status === "duplicate_name" ? `A loadout named "${name}" already exists.` : "Could not save the loadout (name max 45, items max 200 characters).");
   }
   async function del(l) {
-    if (!window.confirm(`Delete loadout "${l.loadout_name}"?`)) return;
+    if (!(await ask(`Delete loadout "${l.loadout_name}"?`, { danger: true }))) return;
     await api(`doctor/loadouts/${kind}/delete`, { method: "POST", body: { loadout_name: l.loadout_name, problem_name: l.problem_name || "" } }); load();
   }
   return (
@@ -74,7 +74,7 @@ export default function PlanTab({ state, setState, writable }) {
   const applyLabs = (items) => setState({ ...state, labs: [...state.labs, ...items.filter((n) => !state.labs.some((x) => x.lab_test_name === n)).map((n) => ({ lab_test_name: n.slice(0, 40), emergency_test: "NO", repeat_test: "NO" }))] });
   const editMed = (i, patch) => setState({ ...state, meds: state.meds.map((x, j) => (j === i ? { ...x, ...patch } : x)) });
   async function check() {
-    const { data } = await api("doctor/drug-interactions", { method: "POST", body: { medicine_names: state.meds.map((x) => x.medicine_name) } });
+    const { data } = await api("doctor/drug-interactions", { method: "POST", body: { medicine_names: state.meds.map((x) => x.medicine_name) } }); if (data?.status === "cancelled_by_user") { return; }
     setInter(data.interactions || []);
   }
 

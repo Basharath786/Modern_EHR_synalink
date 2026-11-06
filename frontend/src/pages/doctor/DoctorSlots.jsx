@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api } from "../../api";
+import { api, ask } from "../../api";
 import { Badge, Empty, ErrorBox, Loading, PageHead, Tabs, useApi } from "../../components/ui";
 
 const MSG = {
@@ -26,10 +26,10 @@ function DateManager({ mode }) {
   useEffect(() => { setSel([]); setMsg(null); if (!date) { setSt(null); return; }
     api(`doctor/slots/date?date=${date}`).then(({ data }) => { if (data.status) { setSt(null); setMsg({ ok: false, text: MSG[data.status] || "Could not load slots." }); } else setSt(data); }); }, [date]);
   async function go(action) {
-    if (action === "clear" && !window.confirm("Clear this entire date?")) return;
-    if (action === "remove" && !window.confirm("Remove the selected slots?")) return;
+    if (action === "clear" && !(await ask("Clear this entire date?", { danger: true }))) return;
+    if (action === "remove" && !(await ask("Remove the selected slots?", { danger: true }))) return;
     setBusy(true); setMsg(null);
-    const { data } = await api(`doctor/slots/${action}`, { method: "POST", body: { date, slots: sel } });
+    const { data } = await api(`doctor/slots/${action}`, { method: "POST", body: { date, slots: sel } }); if (data?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setBusy(false);
     if (["created", "added", "removed", "cleared"].includes(data.status)) { setSt(data); setSel([]); setMsg({ ok: true, text: { created: "The slots have been created for this date.", added: "The new slots have been added for this date.", removed: "The selected slots have been removed.", cleared: "All slots have been removed for this date." }[data.status] }); }
     else setMsg({ ok: false, text: MSG[data.status] || "Something went wrong. Please try again." });

@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../../auth";
-import { APPT, Badge, ErrorBox, Loading, useApi } from "../../components/ui";
+import { APPT, Badge, ErrorBox, Loading, useApi, N } from "../../components/ui";
 
 // Legacy hospital-portal/index.html + counts.js (listCountDetails, hospitalAppointmentCount, today's list)
 export default function HospitalHome() {
@@ -16,11 +16,11 @@ export default function HospitalHome() {
         {data.pending_staff > 0 && <span><b>{data.pending_staff}</b> staff account(s) wait for approval — <Link className="link" to="/app/staff-approval">review</Link>. </span>}
         {data.pending_affiliations.lab + data.pending_affiliations.pharmacy > 0 && <span><b>{data.pending_affiliations.lab + data.pending_affiliations.pharmacy}</b> incoming affiliation request(s) — <Link className="link" to="/app/affiliations">open</Link>.</span>}</div>}
       <div className="tiles">
-        <Link to="/app/doctors" className="tile blue"><span>Doctors</span><b>{c.doctors}</b></Link>
-        <Link to="/app/nurses" className="tile violet"><span>Nurses</span><b>{c.nurses}</b></Link>
-        <Link to="/app/receptionists" className="tile green"><span>Receptionists</span><b>{c.receptionists}</b></Link>
-        <Link to="/app/departments" className="tile amber"><span>Departments</span><b>{c.departments}</b></Link>
-        <Link to="/app/patient-validation" className="tile red"><span>Patients to validate</span><b>{data.unvalidated_patients}</b></Link>
+        <Link to="/app/doctors" className="tile blue"><span>Doctors</span><b><N v={c.doctors} /></b></Link>
+        <Link to="/app/nurses" className="tile violet"><span>Nurses</span><b><N v={c.nurses} /></b></Link>
+        <Link to="/app/receptionists" className="tile green"><span>Receptionists</span><b><N v={c.receptionists} /></b></Link>
+        <Link to="/app/departments" className="tile amber"><span>Departments</span><b><N v={c.departments} /></b></Link>
+        <Link to="/app/patient-validation" className="tile red"><span>Patients to validate</span><b><N v={data.unvalidated_patients} /></b></Link>
       </div>
       <section className="card"><div className="card-head"><h3>Appointments</h3><Link className="link" to="/app/appointments">View all</Link></div>
         <div className="tiles">

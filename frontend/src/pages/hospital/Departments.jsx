@@ -12,7 +12,7 @@ export default function Departments() {
   const [open, setOpen] = useState(false); const [busy, setBusy] = useState(false); const [ok, setOk] = useState("");
   async function save(e) {
     e.preventDefault(); setBusy(true);
-    const { data: r } = await api("hospital/departments", { method: "POST", body: f });
+    const { data: r } = await api("hospital/departments", { method: "POST", body: f }); if (r?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setBusy(false);
     if (r.status === "registered") { setOpen(false); reset(); setOk(`Department registered (${r.permanentid}).`); reload(); } else setErrors(r.errors || { deptname: "Registration failed" });
   }

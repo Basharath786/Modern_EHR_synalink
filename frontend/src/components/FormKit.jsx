@@ -18,6 +18,13 @@ export function useReference() {
 export function useForm(initial) {
   const [f, setF] = useState(initial);
   const [errors, setErrors] = useState({});
+  // unsaved-changes guard: warn before closing / reloading the tab while the form is edited
+  const dirty = JSON.stringify(f) !== JSON.stringify(initial);
+  useEffect(() => {
+    if (!dirty) return undefined;
+    const h = (e) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", h); return () => window.removeEventListener("beforeunload", h);
+  }, [dirty]);
   const bind = (name, filter) => ({
     name, value: f[name] ?? "",
     onChange: (e) => { const v = filter ? filter(e.target.value) : e.target.value; setF((cur) => ({ ...cur, [name]: v })); setErrors((er) => ({ ...er, [name]: undefined })); },

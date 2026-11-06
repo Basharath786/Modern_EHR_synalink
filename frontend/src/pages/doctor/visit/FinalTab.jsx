@@ -47,14 +47,14 @@ export default function FinalTab({ v, state, setState, writable, reload, onPrevi
   const medsKey = JSON.stringify(state.meds); const labsKey = JSON.stringify(state.labs);
   async function sendMeds(p) {
     setBusy(true); setMsg(null);
-    const { data } = await api(`doctor/appointments/${apid}/prescription`, { method: "POST", body: { pharmacy_id: p.id, medicines: state.meds.map((x) => ({ ...x, number_of_days: x.medicine_duration })) } });
+    const { data } = await api(`doctor/appointments/${apid}/prescription`, { method: "POST", body: { pharmacy_id: p.id, medicines: state.meds.map((x) => ({ ...x, number_of_days: x.medicine_duration })) } }); if (data?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setBusy(false);
     if (data.status === "ordered") { setState({ ...state, medsSent: medsKey }); setMsg({ ok: true, text: `Order #${data.order_id} sent to ${data.pharmacy}.` }); reload(); }
     else setMsg({ ok: false, text: data.status === "invalid_items" ? `Please check the medicine "${data.medicine || ""}" (quantity 1-999, duration, usage).` : "Could not send the order." });
   }
   async function sendLabs(l) {
     setBusy(true); setMsg(null);
-    const { data } = await api(`doctor/appointments/${apid}/lab-order`, { method: "POST", body: { lab_id: l.id, tests: state.labs } });
+    const { data } = await api(`doctor/appointments/${apid}/lab-order`, { method: "POST", body: { lab_id: l.id, tests: state.labs } }); if (data?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setBusy(false);
     if (data.status === "ordered") { setState({ ...state, labsSent: labsKey }); setMsg({ ok: true, text: `Order #${data.order_id} sent to ${data.lab}.` }); reload(); }
     else setMsg({ ok: false, text: "Could not send the lab order." });

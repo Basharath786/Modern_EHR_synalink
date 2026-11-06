@@ -243,3 +243,58 @@ with any web server that proxies `/api/` to port 8000 (see `frontend/nginx.conf`
 The nurse portal had no screens in the legacy app, so it still shows only the dashboard. Legacy endpoints never
 called by any page (e.g. drug/pharma catalogue admin loaders) and dead calls (removePermanentDetails, generatePermanentId,
 checkAllValidations, superAdminChangePassword...) were not ported; every page in webui/ now has a React equivalent.
+
+## Update - confirmation & result alerts, new home page
+Frontend only (extract over the folder; no backend change).
+- **Every action in every portal now asks for confirmation and shows the result in a popup** (legacy Swal.fire style):
+  approve / reject / validate / cancel / accept / book / reschedule / register / upload / send prescription or lab order /
+  order status changes / slot changes / affiliation requests / change requests / password changes / sign out, etc.
+  Success popups close automatically after ~2.5 s; errors stay until OK. Built into `src/api.js` + `src/components/Dialogs.jsx`,
+  so new screens get it automatically. Where a dialog already asks for a reason (cancel, reject, hold, decline), that dialog is the confirmation.
+  Read-only calls, login and OTP verification are not interrupted.
+- **New public home page**: hero with doctor search, animated live counters, features, 3-step patient guide, role cards, call-to-action banner, footer; responsive and dark-mode aware.
+
+## UI transformation ("Aurora" design system)
+
+Frontend only. No backend, API, auth or schema changes.
+
+**Done and tested** (Playwright on the local stack; hospital account, login page):
+- New visual identity in `styles.css`: clinical teal and indigo, a dark ink sidebar, Manrope and Inter fonts, glass top bar, redesigned dark mode.
+- New Shell:
+  - collapsible sidebar (remembers its state) and a mobile drawer with scrim;
+  - icon per module and an animated active indicator;
+  - user card with sign-out;
+  - skip link.
+- Command palette on Ctrl/⌘ K or `/`. It opens every live module and runs actions: CSV export of the table on screen, change password, density toggle, sign out.
+- Notification centre on the bell, using real data only:
+  - patients: `patient/notifications`, and "mark all read" calls `notifications/read`;
+  - hospital: pending staff and affiliations from `hospital/dashboard`;
+  - lab/pharmacy: pending orders, staff and affiliations from `org/dashboard`;
+  - admins: pending reviews from `admin/dashboard`.
+  For non-patients, "read" state is kept per browser and resets when a count changes.
+- Display settings: theme, comfortable/compact density, text size 90/100/112%.
+- Toast system: success, info and warning results stack, dedupe (×n), auto-dismiss, pause on hover and can be closed. Errors keep the blocking dialog. Confirm dialogs are unchanged.
+- api.js:
+  - network-error alert instead of a crash;
+  - offline and online alerts;
+  - 403 and 5xx alerts on loads;
+  - identical in-flight mutating requests are merged (double-click guard);
+  - the clicked button shows a spinner only while its request runs.
+- Skeleton loaders replace "Loading…". New empty and error states with retry.
+- Modals: focus trap, focus restore, body scroll lock, animated entrance; bottom-sheet layout on phones.
+- Tables: sticky headers and zebra rows. Below 640px they become labelled cards (automatic `data-label`).
+- Dashboard tiles count up from zero.
+- Route transitions with staggered section entrance.
+- Unsaved-changes warning on browser close or reload for every `useForm` form.
+- Every animation is disabled under `prefers-reduced-motion`.
+
+**Checked widths:** 1920, 1440, 1366, 1024, 768, 390, 360. No horizontal page scroll at 360, 390 or 1920.
+
+**Not done or not verified:**
+- Each page's internal layout was restyled through the shared design system, not rewritten one by one.
+- Only the hospital portal and the login page were screenshot-checked. Other portals inherit the same components but were not looked at individually.
+- Column sort and pagination on tables were not added (no backend paging API exists).
+- In-app navigation away from a dirty form shows no warning (React Router `useBlocker` would need a data router).
+- Upload progress bars need an XHR upload path.
+- Server-side "read" state for staff notifications would need a new table and endpoint.
+- Google Fonts load from the internet; the fallback is system fonts.

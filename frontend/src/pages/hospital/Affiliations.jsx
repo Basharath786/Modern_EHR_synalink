@@ -11,7 +11,7 @@ export default function Affiliations() {
   useEffect(() => { setData(null); load(); }, [kind]); // eslint-disable-line react-hooks/exhaustive-deps
   const label = kind === "lab" ? "laboratory" : "pharmacy";
   async function act(path, body, okText) {
-    setMsg(null); const { data: r } = await api(`hospital/affiliations/${kind}/${path}`, { method: "POST", body: body || {} });
+    setMsg(null); const { data: r } = await api(`hospital/affiliations/${kind}/${path}`, { method: "POST", body: body || {} }); if (r?.status === "cancelled_by_user") { return; }
     if (r.affiliated) setData(r);
     setMsg({ ok: ["requested", "accepted", "rejected"].includes(r.status), text: { requested: okText, accepted: okText, rejected: okText, already_requested: "A request is already pending.",
       already_affiliated: "Already affiliated.", reason_required: "Please give a reason." }[r.status] || "Could not complete the action." });

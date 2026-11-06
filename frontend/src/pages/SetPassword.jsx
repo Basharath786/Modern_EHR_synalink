@@ -29,7 +29,7 @@ export default function SetPassword() {
 
   async function request(e) {
     e?.preventDefault(); setErr(""); setBusy(true);
-    const { data } = await api("auth/set-password/request", { method: "POST", body: { permanentid: id.trim() } });
+    const { data } = await api("auth/set-password/request", { method: "POST", body: { permanentid: id.trim() } }); if (data?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setBusy(false);
     if (data.status === "code_sent") { setSent(data); setStep(1); setOtp(""); }
     else if (data.status === "too_soon") setErr(`Please wait ${data.retry_after} seconds before asking for another code.`);
@@ -37,7 +37,7 @@ export default function SetPassword() {
   }
   async function verify(e) {
     e.preventDefault(); setErr(""); setBusy(true);
-    const { data } = await api("auth/set-password/verify", { method: "POST", body: { permanentid: id.trim(), otp } });
+    const { data } = await api("auth/set-password/verify", { method: "POST", body: { permanentid: id.trim(), otp } }); if (data?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setBusy(false);
     if (data.status === "verified") { setToken(data.token); setStep(2); }
     else if (data.status === "otp_invalid") setErr(`Incorrect code. ${data.attempts_left} attempt${data.attempts_left === 1 ? "" : "s"} left.`);
@@ -45,7 +45,7 @@ export default function SetPassword() {
   }
   async function complete(e) {
     e.preventDefault(); setErr(""); setBusy(true);
-    const { data } = await api("auth/set-password/complete", { method: "POST", body: { permanentid: id.trim(), token, new_password: pw, confirm_password: cf } });
+    const { data } = await api("auth/set-password/complete", { method: "POST", body: { permanentid: id.trim(), token, new_password: pw, confirm_password: cf } }); if (data?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setBusy(false);
     if (data.status === "password_set") nav("/login?reason=pwset");
     else { setErr(data.message || ERR[data.status] || "Could not set the password."); if (data.status === "token_expired") setStep(0); }

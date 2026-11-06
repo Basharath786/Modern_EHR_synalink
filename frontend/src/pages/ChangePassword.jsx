@@ -31,7 +31,7 @@ export default function ChangePassword() {
 
   async function submit(e) {
     e.preventDefault(); setErr(""); setBusy(true);
-    const { data } = await api(user.role === "SUPER_ADMIN" ? "superadmin/change-password" : "auth/change-password", { method: "POST", body: { current_password: cur, new_password: nw, confirm_password: cf } });
+    const { data } = await api(user.role === "SUPER_ADMIN" ? "superadmin/change-password" : "auth/change-password", { method: "POST", body: { current_password: cur, new_password: nw, confirm_password: cf } }); if (data?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setBusy(false);
     if (data.status === "password_changed") { signOut(); nav("/login?reason=pwchanged"); }
     else setErr(ERRORS[data.status] || "Could not change password.");

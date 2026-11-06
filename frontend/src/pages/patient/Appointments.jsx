@@ -43,7 +43,7 @@ function Referrals({ items, onChanged, childOnly }) {
     accepted: list.filter((r) => r.patient_status === "accepted" && r.referred_doc_status === "accepted"),
     cancelled: list.filter((r) => r.patient_status === "cancelled"),
   };
-  async function act(path, body) { const { data } = await api(path, { method: "POST", body }); setMsg(["accepted", "cancelled", "booked"].includes(data.status) ? "" : STATUS_TEXT(data.status, "Could not complete the action.")); return data; }
+  async function act(path, body) { const { data } = await api(path, { method: "POST", body }); if (data?.status === "cancelled_by_user") { return; } setMsg(["accepted", "cancelled", "booked"].includes(data.status) ? "" : STATUS_TEXT(data.status, "Could not complete the action.")); return data; }
   const rows = groups[tab];
   return (<>
     <Tabs small items={[["requests", "Referral Requests", groups.requests.length], ["pending", "Referral Doctor Pending", groups.pending.length], ["accepted", "Accepted Referrals", groups.accepted.length], ["cancelled", "Cancelled Referrals", groups.cancelled.length]]} value={tab} onChange={setTab} />

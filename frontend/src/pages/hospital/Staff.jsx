@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { api } from "../../api";
+import { api, ask } from "../../api";
 import { FILE_LABELS, Field, FileInput, GeoFields, RecordView, digits, letters, useForm, useReference } from "../../components/FormKit";
 import { Badge, Empty, ErrorBox, Loading, Modal, PageHead, Tabs, fmtDate, fmtDateTime, useApi } from "../../components/ui";
 
@@ -20,9 +20,9 @@ function DefaultSlots({ doctorId }) {
   const current = data.days.find((d) => d.day === day).slots;
   const opts = data.catalog[len];
   async function act(action, slots) {
-    if (action === "clear" && !window.confirm(`Remove all ${day} slots?`)) return;
+    if (action === "clear" && !(await ask(`Remove all ${day} slots?`, { danger: true }))) return;
     setBusy(true); setMsg(null);
-    const { data: r } = await api(`hospital/doctors/${doctorId}/slots`, { method: "POST", body: { day, action, slots } });
+    const { data: r } = await api(`hospital/doctors/${doctorId}/slots`, { method: "POST", body: { day, action, slots } }); if (r?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setBusy(false); setSel([]);
     const T = { added: "Slots added.", removed: "Slots removed.", cleared: "All slots of the day removed.", overlap: `${r.slot} overlaps ${r.with}.`, nothing_new: "These slots already exist.",
       slot_booked: `Booked appointments exist (${(r.appointments || []).map((a) => `${a.date_of_booking} ${a.time_of_booking}`).join(", ")}). Cancel or reschedule them first.`, select_slots: "Select at least one slot." };
@@ -49,7 +49,7 @@ function Detail({ kind, id, onClose, onChanged }) {
   const { data, loading, reload } = useApi(`hospital/staff/${kind}/${id}`);
   const [tab, setTab] = useState("details"); const [busy, setBusy] = useState(false); const [msg, setMsg] = useState("");
   async function approve() {
-    setBusy(true); const { data: r } = await api(`hospital/staff/${kind}/${id}/approve`, { method: "POST", body: {} }); setBusy(false);
+    setBusy(true); const { data: r } = await api(`hospital/staff/${kind}/${id}/approve`, { method: "POST", body: {} }); if (r?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; } setBusy(false);
     setMsg(r.status === "approved" ? "Approved. A set-password link was sent to the work e-mail." : r.message || "Could not approve."); reload(); onChanged();
   }
   const it = data?.item;
@@ -79,7 +79,7 @@ function Register({ kind, onClose, onDone }) {
   async function save(e) {
     e.preventDefault(); setErr(""); setBusy(true);
     const fd = new FormData(); Object.entries(f).forEach(([k, v]) => k !== "kind" && fd.append(k, v)); Object.entries(files).forEach(([k, v]) => v && fd.append(k, v));
-    const { data } = await api(`hospital/staff/${kind}`, { method: "POST", body: fd });
+    const { data } = await api(`hospital/staff/${kind}`, { method: "POST", body: fd }); if (data?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setBusy(false);
     if (data.status === "registered") onDone(data.message);
     else if (data.errors) { setErrors(data.errors); setErr("Please correct the highlighted fields."); } else setErr("Registration failed.");
@@ -158,7 +158,7 @@ export function StaffApproval() {
   const [view, setView] = useState(null);
   const [msg, setMsg] = useState("");
   async function approve(kind, id) {
-    const { data: r } = await api(`hospital/staff/${kind}/${id}/approve`, { method: "POST", body: {} });
+    const { data: r } = await api(`hospital/staff/${kind}/${id}/approve`, { method: "POST", body: {} }); if (r?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setMsg(r.status === "approved" ? `${id} approved. The set-password link was e-mailed.` : r.message || "Could not approve."); reload();
   }
   const block = (kind, label) => (

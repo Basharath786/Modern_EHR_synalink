@@ -34,7 +34,7 @@ function ProblemsFlags({ id, data, done, disabled }) {
   const [problems, setProblems] = useState([]); const [flags, setFlags] = useState([]); const [r, setR] = useState(null);
   const add = (list, set) => (v) => !list.includes(v) && set([...list, v]);
   async function save(kind, list, set) {
-    const { data: d } = await api(`doctor/appointments/${id}/${kind}`, { method: "POST", body: { [kind]: list } });
+    const { data: d } = await api(`doctor/appointments/${id}/${kind}`, { method: "POST", body: { [kind]: list } }); if (d?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setR(d.status === "added" ? { ok: true, text: d.added ? `Saved ${d.added} new ${kind}${d.skipped_duplicates ? ` (${d.skipped_duplicates} were already active)` : ""}.` : "Nothing new to save: already active for this patient." } : { ok: false, text: MSG[d.status] || "Could not save." });
     if (d.status === "added") { set([]); done(); }
   }
@@ -64,7 +64,7 @@ function Allergies({ id, data, done, disabled }) {
   const cat = useApi("doctor/catalog/allergies?q=aa");
   const [list, setList] = useState([]); const [sev, setSev] = useState("Mild"); const [reaction, setReaction] = useState(""); const [r, setR] = useState(null);
   async function save() {
-    const { data: d } = await api(`doctor/appointments/${id}/allergies`, { method: "POST", body: { allergies: list } });
+    const { data: d } = await api(`doctor/appointments/${id}/allergies`, { method: "POST", body: { allergies: list } }); if (d?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setR(d.status === "added" ? { ok: true, text: "Allergies saved." } : { ok: false, text: MSG[d.status] || "Could not save." });
     if (d.status === "added") { setList([]); done(); }
   }
@@ -90,12 +90,12 @@ function Prescription({ id, data, loadouts, done, disabled }) {
   const payload = () => items.map((m) => ({ medicine_name: m.medicine_name, medicine_quantity: Number(m.medicine_quantity), medicine_duration: `${m.amount} ${m.unit}`, medicine_usage: m.medicine_usage,
     medicine_instructions: m.medicine_instructions, repeat_medicine: m.repeat_medicine ? "YES" : "NO", number_of_days: Number(m.amount) * DAYS[m.unit] }));
   async function send() {
-    const { data: d } = await api(`doctor/appointments/${id}/prescription`, { method: "POST", body: { pharmacy_id: pharm, medicines: payload() } });
+    const { data: d } = await api(`doctor/appointments/${id}/prescription`, { method: "POST", body: { pharmacy_id: pharm, medicines: payload() } }); if (d?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setR(d.status === "ordered" ? { ok: true, text: `Order #${d.order_id} sent to ${d.pharmacy} (${d.items} medicine${d.items > 1 ? "s" : ""}).` } : { ok: false, text: MSG[d.status] || "Could not send the order." });
     if (d.status === "ordered") { setItems([]); done(); }
   }
   async function saveLoadout() {
-    const { data: d } = await api("doctor/loadouts/medicines", { method: "POST", body: { loadout_name: ln, problem_name: "", items: items.map((m) => m.medicine_name) } });
+    const { data: d } = await api("doctor/loadouts/medicines", { method: "POST", body: { loadout_name: ln, problem_name: "", items: items.map((m) => m.medicine_name) } }); if (d?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     if (d.status === "saved") { setSaveAs(false); setLn(""); loadouts.reload(); }
   }
   return (
@@ -129,7 +129,7 @@ function LabOrder({ id, data, loadouts, done, disabled }) {
   const o = data.options; const [lab, setLab] = useState(o.labs[0]?.id || ""); const [tests, setTests] = useState([]); const [r, setR] = useState(null);
   const upd = (i, k, v) => setTests(tests.map((t, j) => (j === i ? { ...t, [k]: v } : t)));
   async function send() {
-    const { data: d } = await api(`doctor/appointments/${id}/lab-order`, { method: "POST", body: { lab_id: lab, tests: tests.map((t) => ({ lab_test_name: t.name, repeat_test: t.repeat ? "YES" : "NO", emergency_test: t.urgent ? "YES" : "NO" })) } });
+    const { data: d } = await api(`doctor/appointments/${id}/lab-order`, { method: "POST", body: { lab_id: lab, tests: tests.map((t) => ({ lab_test_name: t.name, repeat_test: t.repeat ? "YES" : "NO", emergency_test: t.urgent ? "YES" : "NO" })) } }); if (d?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setR(d.status === "ordered" ? { ok: true, text: `Order #${d.order_id} sent to ${d.lab} (${d.items} test${d.items > 1 ? "s" : ""}).` } : { ok: false, text: MSG[d.status] || "Could not send the order." });
     if (d.status === "ordered") { setTests([]); done(); }
   }
@@ -158,7 +158,7 @@ function LabOrder({ id, data, loadouts, done, disabled }) {
 function FollowUp({ id, done, disabled }) {
   const [slot, setSlot] = useState(null); const [r, setR] = useState(null); const [busy, setBusy] = useState(false);
   async function book() {
-    setBusy(true); const { data: d } = await api(`doctor/appointments/${id}/followup`, { method: "POST", body: slot }); setBusy(false);
+    setBusy(true); const { data: d } = await api(`doctor/appointments/${id}/followup`, { method: "POST", body: slot }); if (d?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; } setBusy(false);
     setR(d.status === "booked" ? { ok: true, text: `Follow-up booked for ${fmtDate(slot.date)}, ${slot.time} (#${d.appointment_id}).` } : { ok: false, text: MSG[d.status] || "Could not book the follow-up." });
     if (d.status === "booked") { setSlot(null); done(); }
   }

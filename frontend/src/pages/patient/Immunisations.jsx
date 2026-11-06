@@ -16,7 +16,7 @@ export default function Immunisations() {
   async function add(e) {
     e.preventDefault(); setBusy(true); setErr("");
     const fd = new FormData(); Object.entries(f).forEach(([k, v]) => fd.append(k, v)); if (file) fd.append("file", file); if (forId) fd.append("for", forId);
-    const { data: r } = await api("patient/vaccinations/add", { method: "POST", body: fd });
+    const { data: r } = await api("patient/vaccinations/add", { method: "POST", body: fd }); if (r?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setBusy(false);
     if (r.status === "added") { setOpen(false); setF(blank); setFile(null); reload(); } else setErr(ERR[r.status] || "Could not save.");
   }

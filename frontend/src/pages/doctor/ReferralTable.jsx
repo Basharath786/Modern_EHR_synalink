@@ -9,11 +9,11 @@ const tone = (s) => ({ accepted: "green", pending: "amber", cancelled: "red" }[s
 export default function ReferralTable({ kind, items, onChanged }) {
   const [decline, setDecline] = useState(null); const [reason, setReason] = useState(""); const [view, setView] = useState(null); const [msg, setMsg] = useState("");
   async function accept(r) {
-    const { data } = await api(`doctor/referrals/${r.apnt_id}/accept`, { method: "POST", body: {} });
+    const { data } = await api(`doctor/referrals/${r.apnt_id}/accept`, { method: "POST", body: {} }); if (data?.status === "cancelled_by_user") { return; }
     setMsg(data.status === "accepted" ? "" : "Could not accept this referral."); onChanged();
   }
   async function doDecline() {
-    const { data } = await api(`doctor/referrals/${decline.apnt_id}/decline`, { method: "POST", body: { reason } });
+    const { data } = await api(`doctor/referrals/${decline.apnt_id}/decline`, { method: "POST", body: { reason } }); if (data?.status === "cancelled_by_user") { return; }
     if (data.status === "cancelled") { setDecline(null); setReason(""); onChanged(); } else setMsg(data.status === "reason_too_long" ? "Reason must be 200 characters or fewer." : "Could not decline.");
   }
   if (!items.length) return <Empty title="No referrals" text="Nothing in this list." />;

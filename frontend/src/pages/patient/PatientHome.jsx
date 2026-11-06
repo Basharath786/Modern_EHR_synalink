@@ -2,10 +2,10 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../../auth";
 import { useEffect } from "react";
 import ApptRow from "../../components/ApptRow";
-import { Badge, ErrorBox, Loading, useApi } from "../../components/ui";
+import { Badge, ErrorBox, Loading, useApi, N } from "../../components/ui";
 
 const Tile = ({ label, value, tone, to }) => (
-  <Link to={to} className={`tile ${tone}`}><span>{label}</span><b>{value}</b></Link>
+  <Link to={to} className={`tile ${tone}`}><span>{label}</span><b><N v={value} /></b></Link>
 );
 
 export default function PatientHome() {

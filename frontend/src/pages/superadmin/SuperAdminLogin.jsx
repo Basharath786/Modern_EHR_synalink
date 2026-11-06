@@ -22,7 +22,7 @@ export default function SuperAdminLogin() {
   const [show, setShow] = useState(false); const [busy, setBusy] = useState(false); const [err, setErr] = useState(""); const [info, setInfo] = useState("");
   useEffect(() => { api("superadmin/status").then(({ data }) => { setConfigured(!!data.configured); if (!data.configured) setMode("setup"); }); }, []);
   const go = (m) => { setMode(m); setStep(0); setErr(""); setInfo(""); setPw(""); setCf(""); setCode(""); };
-  const call = async (path, body, headers) => { setErr(""); setBusy(true); const r = await api(path, { method: "POST", body, headers }); setBusy(false); return r.data; };
+  const call = async (path, body, headers) => { setErr(""); setBusy(true); const r = await api(path, { method: "POST", body, headers }); if (r.data?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; } setBusy(false); return r.data; };
 
   async function login(e) {
     e.preventDefault(); const d = await call("superadmin/login", { super_admin_id: sid.trim(), password: pw });

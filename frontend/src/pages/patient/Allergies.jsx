@@ -25,7 +25,7 @@ export default function Allergies() {
     if (!f.allergy_name || !f.allergies_severity || !f.reasons.length) return setErr("Please fill all the fields.");
     if (desc.length > 50) return setErr("Description is too long (max 50 characters) — select fewer reactions.");
     setBusy(true);
-    const { data: r } = await api("patient/allergies/add", { method: "POST", body: { allergy_name: f.allergy_name, allergies_severity: f.allergies_severity, allergies_description: desc, for: forId } });
+    const { data: r } = await api("patient/allergies/add", { method: "POST", body: { allergy_name: f.allergy_name, allergies_severity: f.allergies_severity, allergies_description: desc, for: forId } }); if (r?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setBusy(false);
     if (r.status === "added") { setOpen(false); setF(blank); reload(); } else setErr("Could not save. Check the fields and try again.");
   }

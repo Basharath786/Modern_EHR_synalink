@@ -9,7 +9,7 @@ export default function Integrations() {
   if (loading) return <Loading />; if (error) return <ErrorBox onRetry={reload} />;
   async function test(channel) {
     setBusy(channel); setMsg(null);
-    const { data: r } = await api("superadmin/integrations/test", { method: "POST", body: { channel, to: to[channel] } }); setBusy("");
+    const { data: r } = await api("superadmin/integrations/test", { method: "POST", body: { channel, to: to[channel] } }); if (r?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; } setBusy("");
     setMsg({ ok: r.status === "sent", text: r.status === "sent" ? `Test ${channel} sent.` : r.status === "not_configured" ? `${channel} is not configured in backend/.env.` : r.message || `Test ${channel} failed.` });
   }
   const Row = ({ k, v }) => <div><dt>{k}</dt><dd>{v === true ? "Yes" : v === false ? "No" : v || "—"}</dd></div>;

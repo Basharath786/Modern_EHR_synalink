@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { api } from "../api";
 
@@ -17,20 +17,55 @@ export const PageHead = ({ title, subtitle, action }) => (
   <div className="page-head"><div><h1>{title}</h1>{subtitle && <p className="muted">{subtitle}</p>}</div>{action}</div>
 );
 export const Badge = ({ tone = "gray", children }) => <span className={`badge ${tone}`}>{children}</span>;
-export const Empty = ({ title, text }) => (<div className="empty-box"><b>{title}</b>{text && <p className="muted">{text}</p>}</div>);
-export const Loading = () => <div className="loading"><span className="spinner dark" /> Loading…</div>;
-export const ErrorBox = ({ onRetry }) => (<div className="alert error">Could not load data. <button className="link" onClick={onRetry}>Retry</button></div>);
+export const Empty = ({ title, text, action }) => (
+  <div className="empty-box"><span className="empty-glyph" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M4 7h16M4 12h10M4 17h7"/><circle cx="18" cy="17" r="3"/></svg></span>
+    <b>{title}</b>{text && <p className="muted">{text}</p>}{action}</div>);
+// Skeleton placeholder shown only while a real request is pending.
+export const Loading = ({ rows = 4, variant = "list" }) => (
+  <div className="skel-wrap" role="status" aria-live="polite" aria-label="Loading">
+    {variant === "cards" && <div className="skel-cards">{Array.from({ length: 3 }, (_, i) => <span key={i} className="skel skel-card" />)}</div>}
+    {Array.from({ length: rows }, (_, i) => <div key={i} className="skel-row"><span className="skel skel-dot" /><span className="skel skel-line" style={{ width: `${86 - i * 9}%` }} /></div>)}
+    <span className="sr-only">Loading…</span>
+  </div>);
+export const ErrorBox = ({ onRetry, text }) => (
+  <div className="error-box" role="alert"><span className="error-glyph" aria-hidden="true">!</span>
+    <div className="grow"><b>Could not load this information</b><p className="muted small">{text || "The request failed. Your data is unchanged."}</p></div>
+    {onRetry && <button className="btn ghost sm" onClick={onRetry}>↻ Retry</button>}</div>);
+
+// Animated number (respects reduced motion)
+export function useCount(target, ms = 900) {
+  const [v, setV] = useState(0);
+  useEffect(() => {
+    const n = Number(target) || 0;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) { setV(n); return undefined; }
+    let raf; const t0 = performance.now();
+    const step = (t) => { const k = Math.min(1, (t - t0) / ms); setV(Math.round(n * (1 - Math.pow(1 - k, 3)))); if (k < 1) raf = requestAnimationFrame(step); };
+    raf = requestAnimationFrame(step); return () => cancelAnimationFrame(raf);
+  }, [target, ms]);
+  return v;
+}
 
 export function Modal({ open, title, onClose, children, wide, xl }) {
+  const box = useRef(null);
   useEffect(() => {
-    const h = (e) => e.key === "Escape" && onClose();
-    if (open) document.addEventListener("keydown", h);
-    return () => document.removeEventListener("keydown", h);
+    if (!open) return undefined;
+    const before = document.activeElement;
+    const h = (e) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "Tab" && box.current) {   // keep focus inside the dialog
+        const f = [...box.current.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')].filter((x) => !x.disabled);
+        if (!f.length) return; const first = f[0], last = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    };
+    document.addEventListener("keydown", h); document.body.classList.add("modal-open");
+    setTimeout(() => { if (box.current && !box.current.contains(document.activeElement)) (box.current.querySelector("input,select,textarea") || box.current).focus(); }, 30);
+    return () => { document.removeEventListener("keydown", h); document.body.classList.remove("modal-open"); before?.focus?.(); };
   }, [open, onClose]);
   if (!open) return null;
   return createPortal(
     <div className="modal-back" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className={`modal ${wide ? "wide" : ""} ${xl ? "xl" : ""}`} role="dialog" aria-modal="true" aria-label={title}>
+      <div ref={box} tabIndex={-1} className={`modal ${wide ? "wide" : ""} ${xl ? "xl" : ""}`} role="dialog" aria-modal="true" aria-label={title}>
         <div className="modal-head"><h3>{title}</h3><button className="icon-btn" onClick={onClose} aria-label="Close">✕</button></div>
         {children}
       </div>
@@ -64,3 +99,5 @@ export const DateChip = ({ value }) => {
   const d = value ? new Date(value) : null;
   return <div className="date-chip"><b>{d ? d.getDate() : "—"}</b><span>{d ? d.toLocaleString(undefined, { month: "short" }) : ""}</span></div>;
 };
+// animated counter for dashboard tiles; non-numbers render unchanged
+export function N({ v }) { const n = useCount(typeof v === "number" ? v : Number(v)); return typeof v === "number" || /^\d+$/.test(String(v ?? "")) ? n.toLocaleString() : (v ?? "—"); }

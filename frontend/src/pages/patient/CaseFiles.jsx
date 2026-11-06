@@ -19,7 +19,7 @@ export default function CaseFiles() {
   async function upload(e) {
     e.preventDefault(); setErr(""); setBusy(true);
     const fd = new FormData(); fd.append("file_name", f.name.trim()); if (f.file) fd.append("file", f.file);
-    const { data } = await api(`patient/past-reports${f.for ? `?for=${f.for}` : ""}`, { method: "POST", body: fd });
+    const { data } = await api(`patient/past-reports${f.for ? `?for=${f.for}` : ""}`, { method: "POST", body: fd }); if (data?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setBusy(false);
     if (data.status === "uploaded") { setUp(false); setF({ name: "", for: "", file: null }); pr.reload(); } else setErr(ERR[data.status] || "Upload failed.");
   }

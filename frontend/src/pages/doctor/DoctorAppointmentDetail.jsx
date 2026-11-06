@@ -17,7 +17,7 @@ export default function DoctorAppointmentDetail() {
   const hist = child ? [["Past history", "past_history"], ["Drug history", "drug_history"]] : [["Family history", "family_history"], ["Past history", "past_history"], ["Drug history", "drug_history"], ["Social history", "social_history"]];
   const open = OPEN.includes(a.appointment_type);
   async function saveHistory() {
-    const { data: r } = await api(`doctor/patients/${a.permanentid}/history`, { method: "POST", body: edit });
+    const { data: r } = await api(`doctor/patients/${a.permanentid}/history`, { method: "POST", body: edit }); if (r?.status === "cancelled_by_user") { return; }
     if (r.status === "updated") { setEdit(null); reload(); } else setNote("Could not save history (check the length).");
   }
   return (

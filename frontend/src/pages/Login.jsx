@@ -26,7 +26,7 @@ export default function Login() {
   async function submit(e) {
     e.preventDefault();
     setErr(""); setInfo(""); setNeedSet(""); setBusy(true);
-    const { data } = await api("auth/login", { method: "POST", body: { permanentid: id.trim(), password: pw } });
+    const { data } = await api("auth/login", { method: "POST", body: { permanentid: id.trim(), password: pw } }); if (data?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setBusy(false);
     if (data.status === "success") { signIn(data.token, data.user); nav("/app"); }
     else if (data.status === "temp_password") { signIn(data.token, data.user, "change_password"); nav("/change-password"); }

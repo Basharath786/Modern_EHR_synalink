@@ -24,7 +24,7 @@ export default function OtpVerify() {
 
   async function send() {
     setSending(true); setErr("");
-    const { data } = await api("patient/otp/send", { method: "POST", body: {} });
+    const { data } = await api("patient/otp/send", { method: "POST", body: {} }); if (data?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setSending(false);
     if (data.status === "otp_sent") { setMobile(data.mobile); setWait(data.resend_after); }
     else if (data.status === "too_soon") setWait(data.retry_after);
@@ -44,7 +44,7 @@ export default function OtpVerify() {
   }
   async function verify(e) {
     e.preventDefault(); setBusy(true); setErr("");
-    const { data } = await api("patient/otp/verify", { method: "POST", body: { otp: code } });
+    const { data } = await api("patient/otp/verify", { method: "POST", body: { otp: code } }); if (data?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setBusy(false);
     if (data.status === "success") { signIn(data.token, data.user); nav("/app"); }
     else {

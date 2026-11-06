@@ -36,7 +36,7 @@ export default function BookingFlow({ patient, onDone, subjects }) {
     setBusy(true); setErr("");
     const symptoms = [...picked, note.trim().replace(/,/g, " ")].filter(Boolean).map((x) => x.trim().replace(/\s+/g, "-")).join(",").slice(0, 600);
     const body = { doctor_id: doctor.permanentid, date: slot.date, time: slot.time, type, symptoms, patient_id: patient?.id };
-    const { data } = await api(subject?.child ? `patient/children/${subject.id}/book` : "booking/book", { method: "POST", body });
+    const { data } = await api(subject?.child ? `patient/children/${subject.id}/book` : "booking/book", { method: "POST", body }); if (data?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setBusy(false);
     if (data.status === "booked") onDone(data.appointment_id, { doctor, slot });
     else { setErr(ERR[data.status] || "Could not book the appointment."); if (data.status === "slot_unavailable") { setSlot(null); setStep(1); } }

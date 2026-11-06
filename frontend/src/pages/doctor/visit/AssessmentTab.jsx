@@ -31,7 +31,7 @@ export default function AssessmentTab({ v, state, setState, writable, reload, ge
   const add = (key, val) => { const t = String(val).trim(); if (!t) return; if (state[key].some((x) => (x.toLowerCase?.() || "") === t.toLowerCase())) { setMsg(`"${t}" is already added.`); return; } setMsg(""); setState({ ...state, [key]: [...state[key], t] }); };
   const remove = (key, i) => setState({ ...state, [key]: state[key].filter((_, j) => j !== i) });
   async function toggle(kind, name, status, severity) {
-    const { data } = await api(`doctor/appointments/${apid}/status`, { method: "POST", body: { kind, name, status: status?.toUpperCase() === "ACTIVE" ? "INACTIVE" : "ACTIVE", severity } });
+    const { data } = await api(`doctor/appointments/${apid}/status`, { method: "POST", body: { kind, name, status: status?.toUpperCase() === "ACTIVE" ? "INACTIVE" : "ACTIVE", severity } }); if (data?.status === "cancelled_by_user") { return; }
     if (data.status === "updated") reload(); else setMsg("Could not change the status.");
   }
   function addAllergy() {

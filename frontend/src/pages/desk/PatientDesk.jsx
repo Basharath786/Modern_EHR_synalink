@@ -17,7 +17,7 @@ function ChangeRequest({ p, onClose, onDone }) {
   const val = (k) => vals[k] ?? (p[k] == null ? "" : String(p[k]));
   async function send() {
     setBusy(true); const fd = new FormData(); const changes = {}; pick.forEach((k) => { changes[k] = val(k); }); fd.append("changes", JSON.stringify(changes)); if (file) fd.append("govtidfile", file);
-    const { data } = await api(`desk/patients/${p.permanentid}/change-request`, { method: "POST", body: fd }); setBusy(false);
+    const { data } = await api(`desk/patients/${p.permanentid}/change-request`, { method: "POST", body: fd }); if (data?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; } setBusy(false);
     if (data.status === "requested") onDone("Change request sent. The patient must approve it in their Notifications before anything changes.");
     else { setErrors(data.errors || { _: data.message || "Nothing was changed." }); setStep(1); }
   }
@@ -54,7 +54,7 @@ function PatientView({ pid, onClose, onChanged }) {
   const { data, loading, reload } = useApi(`desk/patients/${pid}`);
   const [msg, setMsg] = useState(null); const [busy, setBusy] = useState(false); const [chg, setChg] = useState(false);
   async function validate() {
-    setBusy(true); const { data: r } = await api(`desk/patients/${pid}/validate`, { method: "POST", body: {} }); setBusy(false);
+    setBusy(true); const { data: r } = await api(`desk/patients/${pid}/validate`, { method: "POST", body: {} }); if (r?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; } setBusy(false);
     setMsg({ ok: r.status === "validated", text: r.message || "Could not validate." }); reload(); onChanged();
   }
   const p = data?.patient;
@@ -83,7 +83,7 @@ function TempPatients() {
   const { data, loading, error, reload } = useApi("desk/temp-patients");
   const [act, setAct] = useState(null); const [reason, setReason] = useState(""); const [msg, setMsg] = useState(null);
   async function go(t, kind, body) {
-    const { data: r } = await api(`desk/temp-patients/${t.temp_id}/${kind}`, { method: "POST", body: body || {} });
+    const { data: r } = await api(`desk/temp-patients/${t.temp_id}/${kind}`, { method: "POST", body: body || {} }); if (r?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setMsg({ ok: ["on_hold", "rejected", "validated"].includes(r.status), text: r.status === "validated" ? `Validated — Permanent ID ${r.permanentid}. A set-password link was e-mailed.` : r.message || { on_hold: "Put on hold.", rejected: "Rejected." }[r.status] || "Could not complete." });
     setAct(null); reload();
   }

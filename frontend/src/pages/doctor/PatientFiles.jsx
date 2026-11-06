@@ -14,7 +14,7 @@ export default function PatientFiles() {
   const file = (kind, q) => openFile(`doctor/patients/${pid}/file/${kind}?${new URLSearchParams(q)}`);
   async function toggle(kind, name, status, severity) {
     if (!myAppt) return;
-    const { data: r } = await api(`doctor/appointments/${myAppt}/status`, { method: "POST", body: { kind, name, status: status?.toUpperCase() === "ACTIVE" ? "INACTIVE" : "ACTIVE", severity } });
+    const { data: r } = await api(`doctor/appointments/${myAppt}/status`, { method: "POST", body: { kind, name, status: status?.toUpperCase() === "ACTIVE" ? "INACTIVE" : "ACTIVE", severity } }); if (r?.status === "cancelled_by_user") { return; }
     setMsg(r.status === "updated" ? "" : "Could not change the status."); reload();
   }
   const groupBy = (rows) => Object.values(rows.reduce((acc, r) => { (acc[r.order_id] = acc[r.order_id] || { ...r, items: [] }).items.push(r); return acc; }, {}));

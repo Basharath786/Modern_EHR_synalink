@@ -35,7 +35,7 @@ function SendOrder({ kind, item, onClose, onDone, forId }) {
   async function send(x) {
     setBusy(true); setMsg("");
     const body = kind === "medicine" ? { order_id: item.order_id, medicine_name: item.medicine_name, pharmacy_id: x.id, for: forId } : { order_id: item.order_id, lab_test_name: item.lab_test_name, lab_id: x.id, for: forId };
-    const { data } = await api(kind === "medicine" ? "patient/medications/reorder" : "patient/lab-orders/reorder", { method: "POST", body });
+    const { data } = await api(kind === "medicine" ? "patient/medications/reorder" : "patient/lab-orders/reorder", { method: "POST", body }); if (data?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setBusy(false); setConfirm(null);
     if (data.status === "ordered") onDone(`Order #${data.order_id} sent to ${data.pharmacy || data.lab}.`); else setMsg(data.status === "not_repeatable" ? "This item is not marked for repeat." : "Could not send the order.");
   }

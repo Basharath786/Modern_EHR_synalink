@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { api, openFile } from "../../api";
 import { useAuth } from "../../auth";
 import { Field, FileInput, RecordView, digits, letters, useForm } from "../../components/FormKit";
-import { Badge, Empty, ErrorBox, Loading, Modal, PageHead, Tabs, fmtDate, fmtDateTime, useApi } from "../../components/ui";
+import { Badge, Empty, ErrorBox, Loading, Modal, PageHead, Tabs, fmtDate, fmtDateTime, useApi, N } from "../../components/ui";
 
 const isAdmin = (u) => u.role === "LAB" || u.role === "PHARMACY";
 const kindOf = (u) => (u.role.startsWith("LAB") ? "lab" : "pharmacy");
@@ -38,10 +38,10 @@ export function OrgHome() {
           <Link to="/app/orders" className="tile violet"><span>Processing</span><b>{o.PROCESSING || 0}</b></Link></>
           : <Link to="/app/orders" className="tile blue"><span>Confirmed</span><b>{o.CONFIRMED || 0}</b></Link>}
         <Link to="/app/orders" className="tile green"><span>{lab ? "Completed" : "Delivered"}</span><b>{o.COMPLETED || 0}</b></Link>
-        <Link to="/app/orders" className="tile red"><span>Cancelled</span><b>{cancelled}</b></Link>
-        <div className="tile gray"><span>Orders today</span><b>{data.today}</b></div>
-        {isAdmin(user) ? <Link to="/app/staff" className="tile violet"><span>Staff</span><b>{data.staff}</b></Link> : <div className="tile violet"><span>Staff</span><b>{data.staff}</b></div>}
-        {isAdmin(user) && <Link to="/app/affiliations" className="tile blue"><span>Affiliated hospitals</span><b>{data.affiliated_hospitals}</b></Link>}
+        <Link to="/app/orders" className="tile red"><span>Cancelled</span><b><N v={cancelled} /></b></Link>
+        <div className="tile gray"><span>Orders today</span><b><N v={data.today} /></b></div>
+        {isAdmin(user) ? <Link to="/app/staff" className="tile violet"><span>Staff</span><b><N v={data.staff} /></b></Link> : <div className="tile violet"><span>Staff</span><b><N v={data.staff} /></b></div>}
+        {isAdmin(user) && <Link to="/app/affiliations" className="tile blue"><span>Affiliated hospitals</span><b><N v={data.affiliated_hospitals} /></b></Link>}
       </div>
     </div>
   );
@@ -56,13 +56,13 @@ function OrderDetail({ id, onClose, onChanged }) {
   const groups = Object.keys(data.flow).map((s) => [s, items.filter((i) => i.status === s)]).filter(([, l]) => l.length);
   async function act(from, action, names, why) {
     setBusy(true); setMsg(null);
-    const { data: r } = await api(`org/orders/${id}/status`, { method: "POST", body: { action, from_status: from, items: names, reason: why || "" } }); setBusy(false);
+    const { data: r } = await api(`org/orders/${id}/status`, { method: "POST", body: { action, from_status: from, items: names, reason: why || "" } }); if (r?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; } setBusy(false);
     setMsg({ ok: r.status === "updated", text: r.status === "updated" ? `Updated to ${(ORDER_STATUS[r.to] || [r.to])[0]}. The patient was notified.` : r.message || { reason_required: "Please give a reason." }[r.status] || "Could not update." });
     setSel([]); setCancel(null); reload(); onChanged();
   }
   async function upload() {
     setBusy(true); const fd = new FormData(); fd.append("lab_test_name", up); fd.append("report_file", file);
-    const { data: r } = await api(`org/orders/${id}/report`, { method: "POST", body: fd }); setBusy(false);
+    const { data: r } = await api(`org/orders/${id}/report`, { method: "POST", body: fd }); if (r?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; } setBusy(false);
     setMsg({ ok: r.status === "uploaded", text: r.status === "uploaded" ? `Report uploaded for ${up}. The test is completed and the patient was notified.` : r.message || "Upload failed." });
     setUp(null); setFile(null); reload(); onChanged();
   }
@@ -135,11 +135,11 @@ export function OrgStaff() {
   const [file, setFile] = useState(null); const [busy, setBusy] = useState(false);
   async function save(e) {
     e.preventDefault(); setBusy(true); const fd = new FormData(); Object.entries(f).forEach(([k, v]) => fd.append(k, v)); if (file) fd.append("govtidfile", file);
-    const { data: r } = await api("org/staff", { method: "POST", body: fd }); setBusy(false);
+    const { data: r } = await api("org/staff", { method: "POST", body: fd }); if (r?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; } setBusy(false);
     if (r.status === "registered") { setReg(false); reset(); setFile(null); setOk(r.message); reload(); } else setErrors(r.errors || { fname: "Registration failed" });
   }
   async function approve(id) {
-    const { data: r } = await api(`org/staff/${id}/approve`, { method: "POST", body: {} });
+    const { data: r } = await api(`org/staff/${id}/approve`, { method: "POST", body: {} }); if (r?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setOk(r.status === "approved" ? `${id} approved. The set-password link was e-mailed.` : r.message || "Could not approve."); reload(); det.reload();
   }
   const items = (data?.items || []).filter((x) => tab === "all" || x.status === "PENDING");
@@ -187,7 +187,7 @@ export function OrgAffiliations() {
   const load = async () => { const r = await api("org/affiliations"); r.ok ? setData(r.data) : setError(true); };
   useEffect(() => { load(); }, []);
   async function act(path, body, okText) {
-    setMsg(null); const { data: r } = await api(`org/affiliations/${path}`, { method: "POST", body: body || {} });
+    setMsg(null); const { data: r } = await api(`org/affiliations/${path}`, { method: "POST", body: body || {} }); if (r?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     if (r.affiliated) setData(r);
     setMsg({ ok: ["requested", "accepted", "rejected"].includes(r.status), text: ["requested", "accepted", "rejected"].includes(r.status) ? okText
       : { already_requested: "A request is already pending.", already_affiliated: "Already affiliated.", reason_required: "Please give a reason." }[r.status] || "Could not complete the action." });

@@ -9,7 +9,7 @@ export default function RescheduleModal({ appt, onClose, onDone, endpoint }) {
   const [slot, setSlot] = useState(null); const [busy, setBusy] = useState(false); const [err, setErr] = useState("");
   async function go() {
     setBusy(true); setErr("");
-    const { data } = await api(endpoint || `booking/appointments/${appt.appointmentid}/reschedule`, { method: "POST", body: slot });
+    const { data } = await api(endpoint || `booking/appointments/${appt.appointmentid}/reschedule`, { method: "POST", body: slot }); if (data?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setBusy(false);
     if (data.status === "rescheduled") { setSlot(null); onDone(); } else setErr(MSG[data.status] || "Could not reschedule.");
   }

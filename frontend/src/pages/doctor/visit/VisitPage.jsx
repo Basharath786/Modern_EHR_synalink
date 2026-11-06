@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { api } from "../../../api";
+import { api, ask } from "../../../api";
 import CaseFile from "../../../components/CaseFile";
 import { APPT, Badge, ErrorBox, Loading, Modal, Tabs, fmtDate, useApi } from "../../../components/ui";
 import { useLegacy } from "../../../lib/legacyData";
@@ -65,7 +65,7 @@ export default function VisitPage() {
   const name = [p.fname, (p.mname || "").trim(), p.lname].filter(Boolean).join(" ") || a.fullname;
 
   async function saveSymptoms(list) {
-    const { data } = await api(`doctor/appointments/${id}/symptoms`, { method: "POST", body: { symptoms: list } });
+    const { data } = await api(`doctor/appointments/${id}/symptoms`, { method: "POST", body: { symptoms: list } }); if (data?.status === "cancelled_by_user") { return; }
     if (data.status === "updated") { reload(); return true; }
     setErr(data.status === "too_long" ? "The symptom list is too long (600 characters)." : "Could not update the symptoms."); return false;
   }
@@ -83,9 +83,9 @@ export default function VisitPage() {
     if (!state.status) return setErr(ERR.status_required);
     if (state.status === "referral-request" && (!state.referral.doctor_id || !(state.referral.reason || "").trim())) return setErr(ERR.invalid_referral);
     if (state.status === "followup" && !state.followup.date) return setErr(ERR.followup_slot_required);
-    if (!window.confirm("Send the reports? The case file cannot be changed afterwards.")) return;
+    if (!(await ask("Send the reports? The case file cannot be changed afterwards.", { danger: true }))) return;
     setSending(true);
-    const { data } = await api(`doctor/appointments/${id}/report`, { method: "POST", body: payload() });
+    const { data } = await api(`doctor/appointments/${id}/report`, { method: "POST", body: payload() }); if (data?.status === "cancelled_by_user") { return; }
     setSending(false);
     if (data.status === "sent") { sessionStorage.removeItem(KEY); setDone(data); return; }
     setErr(ERR[data.status] ? `${ERR[data.status]}${data.field ? ` (${data.field.replace("_", " ")})` : ""}.` : "Error while sending the reports.");

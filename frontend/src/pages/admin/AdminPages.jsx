@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { api, openFile } from "../../api";
+import { api, openFile, ask } from "../../api";
 import { useAuth } from "../../auth";
 import { FILE_LABELS, RecordView } from "../../components/FormKit";
-import { Badge, Empty, ErrorBox, Loading, Modal, PageHead, Tabs, fmtDate, fmtDateTime, useApi } from "../../components/ui";
+import { Badge, Empty, ErrorBox, Loading, Modal, PageHead, Tabs, fmtDate, fmtDateTime, useApi, N } from "../../components/ui";
 
 const KIND = { hospital: ["Hospitals", "hospital_email"], lab: ["Laboratories", "labemail"], pharmacy: ["Pharmacies", "pharmacy_email"] };
 
@@ -19,13 +19,13 @@ export function AdminHome() {
       <div className="tiles">
         {Object.entries(KIND).map(([k, [l]]) => <Link key={k} to={`/app/${k === "lab" ? "labs" : k === "pharmacy" ? "pharmacies" : "hospitals"}`} className={`tile ${data[k].pending ? "amber" : "green"}`}>
           <span>{l} — pending approval</span><b>{data[k].pending}</b><span>{data[k].approved} approved of {data[k].total}{!sa && data.approved_by_me ? ` · ${data.approved_by_me[k]} by you` : ""}</span></Link>)}
-        {sa && <Link to="/app/internal-admins" className={`tile ${data.admins.pending ? "amber" : "blue"}`}><span>Internal admins — pending</span><b>{data.admins.pending}</b><span>{data.admins.active} active of {data.admins.approved}</span></Link>}
+        {sa && <Link to="/app/internal-admins" className={`tile ${data.admins.pending ? "amber" : "blue"}`}><span>Internal admins — pending</span><b><N v={data.admins.pending} /></b><span>{data.admins.active} active of {data.admins.approved}</span></Link>}
       </div>
       {sa && <div className="tiles">
         {[["Doctors", data.doctors, "doctor"], ["Nurses", data.nurses, "nurse"], ["Receptionists", data.receptionists, "receptionist"], ["Departments", data.departments, "department"],
           ["Patients (validated)", data.patients.approved, "patient"], ["Patients (not validated)", data.patients.pending, "patient_pending"], ["Children", data.children, "child"],
           ["Lab staff", data.lab_staff, "lab_staff"], ["Pharmacy staff", data.pharmacy_staff, "pharmacy_staff"]].map(([l, n, k]) =>
-          <Link key={k} to={`/app/users?kind=${k}`} className="tile violet"><span>{l}</span><b>{n}</b></Link>)}</div>}
+          <Link key={k} to={`/app/users?kind=${k}`} className="tile violet"><span>{l}</span><b><N v={n} /></b></Link>)}</div>}
     </div>
   );
 }
@@ -34,8 +34,8 @@ function EntityDetail({ kind, id, onClose, onChanged }) {
   const { data, loading, reload } = useApi(`admin/entities/${kind}/${id}`);
   const [busy, setBusy] = useState(false); const [msg, setMsg] = useState(null);
   async function approve() {
-    if (!window.confirm(`Approve ${id}? A set-password link will be e-mailed.`)) return;
-    setBusy(true); const { data: r } = await api(`admin/entities/${kind}/${id}/approve`, { method: "POST", body: {} }); setBusy(false);
+    if (!(await ask(`Approve ${id}? A set-password link will be e-mailed.`))) return;
+    setBusy(true); const { data: r } = await api(`admin/entities/${kind}/${id}/approve`, { method: "POST", body: {} }); if (r?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; } setBusy(false);
     setMsg({ ok: r.status === "approved", text: r.status === "approved" ? "Approved. The set-password link was sent." : r.message || "Could not approve." }); reload(); onChanged();
   }
   const it = data?.item;
@@ -93,12 +93,12 @@ export function InternalAdmins() {
   const { data, loading, error, reload } = useApi(`superadmin/admins?status=${status}`);
   const det = useApi(view ? `superadmin/admins/${view}` : "superadmin/status");
   async function approve(id) {
-    if (!window.confirm("Approve this internal admin? A Permanent ID and a set-password link will be e-mailed.")) return;
-    const { data: r } = await api(`superadmin/admins/${id}/approve`, { method: "POST", body: {} });
+    if (!(await ask("Approve this internal admin? A Permanent ID and a set-password link will be e-mailed."))) return;
+    const { data: r } = await api(`superadmin/admins/${id}/approve`, { method: "POST", body: {} }); if (r?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setMsg({ ok: r.status === "approved", text: r.status === "approved" ? `Approved — Permanent ID ${r.permanentid}.` : "Could not approve." }); setView(null); reload();
   }
   async function toggle(id, st) {
-    const { data: r } = await api(`superadmin/admins/${id}/status`, { method: "POST", body: { status: st } });
+    const { data: r } = await api(`superadmin/admins/${id}/status`, { method: "POST", body: { status: st } }); if (r?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setMsg({ ok: r.status === "updated", text: r.status === "updated" ? `${id} is now ${st}.` : "Could not update." }); reload(); det.reload();
   }
   const it = view && det.data?.item;

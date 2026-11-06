@@ -25,18 +25,18 @@ export function PatientRegFlow({ desk, onDone }) {
   async function start(e) {
     e.preventDefault(); setErr(""); setBusy(true);
     const fd = new FormData(); Object.entries(f).forEach(([k, v]) => fd.append(k, v)); if (file) fd.append("govtidfile", file);
-    const { data } = await api(base, { method: "POST", body: fd }); setBusy(false);
+    const { data } = await api(base, { method: "POST", body: fd }); if (data?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; } setBusy(false);
     if (data.status === "otp_sent") { setSent(data); setStep(1); setOtp(""); setInfo(`A 6-digit OTP was sent to WhatsApp ${data.mobile}${f.email ? " and to the e-mail" : ""}. It is valid for 10 minutes.`); }
     else if (data.errors) { setErrors(data.errors); setErr("Please correct the highlighted fields."); }
     else setErr(data.message || "Registration failed. Please try again.");
   }
   async function resend() {
-    setErr(""); const { data } = await api(`${base}/resend`, { method: "POST", body: { temp_id: sent.temp_id } });
+    setErr(""); const { data } = await api(`${base}/resend`, { method: "POST", body: { temp_id: sent.temp_id } }); if (data?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     if (data.status === "otp_sent") setInfo("A new OTP was sent."); else if (data.status === "too_soon") setErr(`Please wait ${data.retry_after} seconds.`); else setErr("Could not resend the OTP.");
   }
   async function verify(e) {
     e.preventDefault(); setErr(""); setBusy(true);
-    const { data } = await api(`${base}/verify`, { method: "POST", body: { temp_id: sent.temp_id, otp } }); setBusy(false);
+    const { data } = await api(`${base}/verify`, { method: "POST", body: { temp_id: sent.temp_id, otp } }); if (data?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; } setBusy(false);
     if (data.status === "registered") { setResult(data); setInfo(""); if (desk) { setStep(3); onDone?.(data); } else setStep(2); }
     else if (data.status === "otp_invalid") setErr(`Invalid OTP. ${data.attempts_left} attempt(s) left.`);
     else if (data.status === "otp_expired") setErr("OTP expired or too many attempts. Request a new OTP.");
@@ -44,7 +44,7 @@ export function PatientRegFlow({ desk, onDone }) {
   }
   async function savePw(e) {
     e.preventDefault(); setErr(""); setBusy(true);
-    const { data } = await api("auth/set-password/complete", { method: "POST", body: { permanentid: result.permanentid, token: result.token, new_password: pw, confirm_password: cf } });
+    const { data } = await api("auth/set-password/complete", { method: "POST", body: { permanentid: result.permanentid, token: result.token, new_password: pw, confirm_password: cf } }); if (data?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setBusy(false);
     if (data.status === "password_set") setStep(3); else setErr(data.message || "Could not save the password.");
   }
@@ -119,7 +119,7 @@ export function DeskRegisterPatient() {
   const nav = useNavigate();
   const [done, setDone] = useState(null); const [msg, setMsg] = useState(null); const [k, setK] = useState(0);
   async function validate() {
-    const { data } = await api(`desk/patients/${done.permanentid}/validate`, { method: "POST", body: {} });
+    const { data } = await api(`desk/patients/${done.permanentid}/validate`, { method: "POST", body: {} }); if (data?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setMsg({ ok: data.status === "validated", text: data.message || "Could not validate." });
   }
   return (

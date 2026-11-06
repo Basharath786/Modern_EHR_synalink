@@ -14,7 +14,7 @@ export default function Notifications() {
   const pending = list.filter((n) => n.type === "CHANGE_REQUEST" && n.status === "PENDING").length;
   async function decide() {
     setBusy(true);
-    const { data: r } = await api(`patient/notifications/${ask.n.id}/respond`, { method: "POST", body: { decision: ask.decision } });
+    const { data: r } = await api(`patient/notifications/${ask.n.id}/respond`, { method: "POST", body: { decision: ask.decision } }); if (r?.status === "cancelled_by_user") { if (typeof setBusy === "function") setBusy(false); return; }
     setBusy(false); setAsk(null);
     setMsg({ ok: ["approved", "rejected"].includes(r.status), text: r.message || "Could not complete. Please try again." }); reload();
   }
