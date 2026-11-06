@@ -1,0 +1,42 @@
+# Production-style stack: MariaDB + Django (gunicorn) + React (nginx, also proxies /api).
+# 1. cp backend/.env.example backend/.env and fill it (DB_HOST=db, DJANGO_DEBUG=False, DEV_* = False, real SMTP/WhatsApp)
+# 2. put keystore/aes_key.hex in backend/keystore/ (same key as the Java app)
+# 3. first start loads ./deploy/ehr.sql (your dump) into an empty volume
+# 4. docker compose up -d --build   ->  http://localhost:8080
+services:
+  db:
+    image: mariadb:10.11
+    environment:
+      MARIADB_DATABASE: ehr
+      MARIADB_USER: ${DB_USER:-ehr}
+      MARIADB_PASSWORD: ${DB_PASSWORD:-ehr}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-change-me}
+    volumes:
+      - dbdata:/var/lib/mysql
+      - ./deploy/ehr.sql:/docker-entrypoint-initdb.d/ehr.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      retries: 10
+    restart: unless-stopped
+  backend:
+    build: ./backend
+    env_file: ./backend/.env
+    environment:
+      DB_HOST: db
+    volumes:
+      - ./backend/keystore:/app/keystore:ro
+      - uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    depends_on: [backend]
+    restart: unless-stopped
+volumes:
+  dbdata:
+  uploads:

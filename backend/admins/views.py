@@ -70,7 +70,7 @@ def dashboard(request):
             "doctors": c("SELECT COUNT(*) n FROM doctor"), "nurses": c("SELECT COUNT(*) n FROM nurse"),
             "receptionists": c("SELECT COUNT(*) n FROM receptionist"), "departments": c("SELECT COUNT(*) n FROM department"),
             "patients": {"approved": c(f"SELECT COUNT(*) n FROM patient WHERE {APPROVED}"), "pending": c(f"SELECT COUNT(*) n FROM patient WHERE {PENDING}"),
-                         "temporary": c("SELECT COUNT(*) n FROM patient_temp")},
+                         "temporary": c("SELECT COUNT(*) n FROM patient_temp WHERE COALESCE(status,'') <> 'OTP'")},
             "children": c("SELECT COUNT(*) n FROM child_reg"), "lab_staff": c("SELECT COUNT(*) n FROM lab_staff"),
             "pharmacy_staff": c("SELECT COUNT(*) n FROM pharmacy_staff"),
         })
@@ -228,7 +228,7 @@ USERS = {
     "doctor": ("doctor", "1=1", "date_time DESC"), "nurse": ("nurse", "1=1", "date_time DESC"),
     "receptionist": ("receptionist", "1=1", "date_time DESC"), "department": ("department", "1=1", "hospital_name, deptname"),
     "patient": ("patient", APPROVED, "date_time DESC"), "patient_pending": ("patient", PENDING, "date_time DESC"),
-    "patient_temp": ("patient_temp", "1=1", "date_time DESC"), "child": ("child", "1=1", "date_time DESC"),
+    "patient_temp": ("patient_temp", "COALESCE(status,'') <> 'OTP'", "date_time DESC"), "child": ("child", "1=1", "date_time DESC"),
     "lab_staff": ("lab_staff", "1=1", "date_time DESC"), "pharmacy_staff": ("pharmacy_staff", "1=1", "date_time DESC"),
 }
 
@@ -415,7 +415,8 @@ def sa_change_password(request):
 @authentication_classes([])
 @permission_classes([])
 def reference(request):
-    return Response({"states": GEO, "specialities": SPECIALITIES})
+    from labpharm.register import LAB_SPECIALITIES
+    return Response({"states": GEO, "specialities": SPECIALITIES, "lab_specialities": LAB_SPECIALITIES})
 
 
 HOSPITAL_TYPES = ["Multi Speciality", "General Hospital", "Womens hospitals", "Childrens hospitals", "Cardiac hospitals", " Oncology hospitals",
@@ -476,6 +477,8 @@ def register_hospital(request):
              files["pan_card"], files["gst_proof"], files["registration_proof"]])
         run("INSERT INTO login (permanentid, pswrd, isdefault_password, systemLoginTime, pswrd_changed_time, failed_attempt, account_locked, lock_time) "
             "VALUES (%s,'','YES',NOW(),NOW(),0,'NO',0)", [pid])
+    from accounts import whatsapp
+    whatsapp.new_permanent_id(c["administration_no"], c["contact_person"] or c["hospital_name"], pid)
     mailer.send(c["hospital_email"], f"HOSPITAL registration successful - Permanent ID: {pid}", "Welcome to Cobalt EHR", [
         "Your HOSPITAL registration has been completed successfully.", f"Your Permanent ID: <b>{pid}</b>",
         "Please wait for admin approval. Once approved, you will receive a link to set your password and access the portal."])

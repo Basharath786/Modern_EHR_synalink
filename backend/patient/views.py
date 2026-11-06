@@ -243,8 +243,10 @@ def lab_orders(request):
 @permission_classes([IsPatient])
 @require_validated
 def lab_report(request):
-    r = one("SELECT report_file FROM lab_order WHERE patient_id=%s AND apnt_id=%s AND order_id=%s AND report_file IS NOT NULL",
-            [_pid(request), request.GET.get("apnt_id", ""), request.GET.get("order_id", "0")])
+    test = request.GET.get("test")
+    r = one("SELECT report_file FROM lab_order WHERE patient_id=%s AND apnt_id=%s AND order_id=%s AND report_file IS NOT NULL"
+            + (" AND lab_test_name=%s" if test else "") + " LIMIT 1",
+            [_pid(request), request.GET.get("apnt_id", ""), request.GET.get("order_id", "0")] + ([test] if test else []))
     if not r:
         return Response({"status": "not_found"}, status=404)
     data = bytes(r["report_file"]); ctype, ext = _sniff(data)

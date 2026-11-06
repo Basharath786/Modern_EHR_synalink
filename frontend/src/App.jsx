@@ -35,6 +35,12 @@ import Affiliations from "./pages/hospital/Affiliations";
 import HospitalProfile from "./pages/hospital/HospitalProfile";
 import PatientDesk from "./pages/desk/PatientDesk";
 import { AdminProfile, InternalAdmins, Review, Users } from "./pages/admin/AdminPages";
+import OrgRegister from "./pages/register/OrgRegister";
+import PatientRegister, { DeskRegisterPatient } from "./pages/register/PatientRegister";
+import { OrgAffiliations, OrgOrders, OrgProfile, OrgStaff } from "./pages/org/OrgPages";
+import Directory, { ReceptionProfile } from "./pages/reception/Directory";
+import { Landing, PublicDirectory, RegistrationStatus } from "./pages/public/PublicSite";
+import Integrations from "./pages/superadmin/Integrations";
 
 function Protected({ children, roles }) {
   const { session, isTemp, isOtp, user } = useAuth();
@@ -66,9 +72,15 @@ export default function App() {
     <Routes>
       <Route path="/login" element={full ? <Navigate to="/app" replace /> : isOtp ? <Navigate to="/verify-otp" replace /> : <Login />} />
       <Route path="/verify-otp" element={isOtp ? <OtpVerify /> : <Navigate to={session ? "/app" : "/login"} replace />} />
+      <Route path="/" element={full ? <Navigate to="/app" replace /> : <Landing />} />
+      <Route path="/find/:kind" element={<PublicDirectory />} />
+      <Route path="/registration-status" element={<RegistrationStatus />} />
       <Route path="/set-password" element={<SetPassword />} />
       <Route path="/register/hospital" element={<HospitalRegister />} />
       <Route path="/register/internal-admin" element={<AdminRegister />} />
+      <Route path="/register/lab" element={<OrgRegister key="lab" kind="lab" />} />
+      <Route path="/register/pharmacy" element={<OrgRegister key="pharmacy" kind="pharmacy" />} />
+      <Route path="/register/patient" element={full ? <Navigate to="/app" replace /> : <PatientRegister />} />
       <Route path="/super-admin" element={full ? <Navigate to="/app" replace /> : <SuperAdminLogin />} />
       <Route path="/change-password" element={session && !isOtp ? <ChangePassword /> : <Navigate to="/login" replace />} />
       <Route path="/app" element={<Protected><Shell /></Protected>}>
@@ -89,13 +101,18 @@ export default function App() {
         <Route path="nurses" element={<Protected roles={["HOSPITAL"]}><Staff key="nurse" kind="nurse" /></Protected>} />
         <Route path="receptionists" element={<Protected roles={["HOSPITAL"]}><Staff key="receptionist" kind="receptionist" /></Protected>} />
         <Route path="staff-approval" element={<Protected roles={["HOSPITAL"]}><StaffApproval /></Protected>} />
-        <Route path="affiliations" element={<Protected roles={["HOSPITAL"]}><Affiliations /></Protected>} />
-        <Route path="patient-validation" element={<Protected roles={["HOSPITAL", "RECEPTIONIST"]}><PatientDesk /></Protected>} />
+        <Route path="patient-validation" element={<Protected roles={["HOSPITAL", "RECEPTIONIST", "LAB", "PHARMACY"]}><PatientDesk /></Protected>} />
+        <Route path="register-patient" element={<Protected roles={["HOSPITAL", "RECEPTIONIST"]}><DeskRegisterPatient /></Protected>} />
+        <Route path="directory" element={<Protected roles={["RECEPTIONIST"]}><Directory /></Protected>} />
+        <Route path="orders" element={<Protected roles={["LAB", "LAB_STAFF", "PHARMACY", "PHARMACY_STAFF"]}><OrgOrders /></Protected>} />
+        <Route path="staff" element={<Protected roles={["LAB", "PHARMACY"]}><OrgStaff /></Protected>} />
+        <Route path="affiliations" element={<ByRole map={{ HOSPITAL: <Affiliations />, LAB: <OrgAffiliations />, PHARMACY: <OrgAffiliations /> }} />} />
         <Route path="hospitals" element={<Protected roles={["ADMIN", "SUPER_ADMIN"]}><Review key="hospital" kind="hospital" /></Protected>} />
         <Route path="labs" element={<Protected roles={["ADMIN", "SUPER_ADMIN"]}><Review key="lab" kind="lab" /></Protected>} />
         <Route path="pharmacies" element={<Protected roles={["ADMIN", "SUPER_ADMIN"]}><Review key="pharmacy" kind="pharmacy" /></Protected>} />
         <Route path="internal-admins" element={<Protected roles={["SUPER_ADMIN"]}><InternalAdmins /></Protected>} />
         <Route path="users" element={<Protected roles={["SUPER_ADMIN"]}><Users /></Protected>} />
+        <Route path="integrations" element={<Protected roles={["SUPER_ADMIN"]}><Integrations /></Protected>} />
         <Route path="book-appointment" element={<Protected roles={["PATIENT"]}><BookAppointment /></Protected>} />
         <Route path="problems" element={<Protected roles={["PATIENT"]}><Validated><Problems /></Validated></Protected>} />
         <Route path="medications" element={<Protected roles={["PATIENT"]}><Validated><Medications /></Validated></Protected>} />
@@ -103,7 +120,8 @@ export default function App() {
         <Route path="allergies" element={<Protected roles={["PATIENT"]}><Validated><Allergies /></Validated></Protected>} />
         <Route path="immunisations" element={<Protected roles={["PATIENT"]}><Validated><Immunisations /></Validated></Protected>} />
         <Route path="notifications" element={<Protected roles={["PATIENT"]}><Notifications /></Protected>} />
-        <Route path="profile" element={<ByRole map={{ PATIENT: <Profile />, DOCTOR: <DoctorProfile />, HOSPITAL: <HospitalProfile />, ADMIN: <AdminProfile /> }} />} />
+        <Route path="profile" element={<ByRole map={{ PATIENT: <Profile />, DOCTOR: <DoctorProfile />, HOSPITAL: <HospitalProfile />, ADMIN: <AdminProfile />, RECEPTIONIST: <ReceptionProfile />,
+          LAB: <OrgProfile />, LAB_STAFF: <OrgProfile />, PHARMACY: <OrgProfile />, PHARMACY_STAFF: <OrgProfile /> }} />} />
         <Route path=":module" element={<ComingSoon />} />
       </Route>
       <Route path="*" element={<Navigate to="/app" replace />} />

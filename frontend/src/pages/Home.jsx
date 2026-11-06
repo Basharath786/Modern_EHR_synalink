@@ -7,8 +7,9 @@ import DoctorHome from "./doctor/DoctorHome";
 import ReceptionHome from "./reception/ReceptionHome";
 import HospitalHome from "./hospital/HospitalHome";
 import { AdminHome } from "./admin/AdminPages";
+import { OrgHome } from "./org/OrgPages";
 
-const PHASES = [["Foundation & login", true], ["Patient (core)", true], ["Doctor + Reception (core)", true], ["Hospital + Admins", true], ["Lab + Pharmacy", false], ["Integrations", false]];
+const PHASES = [["Foundation & login", true], ["Patient (core)", true], ["Doctor + Reception (core)", true], ["Hospital + Admins", true], ["Lab + Pharmacy", true], ["Integrations", true]];
 
 export default function Home() {
   const { user } = useAuth();
@@ -17,6 +18,7 @@ export default function Home() {
   if (user.role === "RECEPTIONIST") return <ReceptionHome />;
   if (user.role === "HOSPITAL") return <HospitalHome />;
   if (user.role === "ADMIN" || user.role === "SUPER_ADMIN") return <AdminHome />;
+  if (["LAB", "LAB_STAFF", "PHARMACY", "PHARMACY_STAFF"].includes(user.role)) return <OrgHome />;
   const portal = PORTALS[user.portal];
   const hour = new Date().getHours();
   const greet = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
@@ -38,7 +40,7 @@ export default function Home() {
       </section>
 
       <section className="card">
-        <div className="card-head"><h3>Conversion progress</h3><span className="pill">Phase 4 complete</span></div>
+        <div className="card-head"><h3>Conversion progress</h3><span className="pill">All phases complete</span></div>
         <ol className="steps">
           {PHASES.map(([name, done], i) => (
             <li key={name} className={done ? "done" : ""}><span>{done ? "✓" : i + 1}</span>{name}</li>

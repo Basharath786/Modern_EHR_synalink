@@ -108,3 +108,37 @@ class IsAnyClinical(IsFullScope):
     """Patient, receptionist or doctor (body-map symptom list is used by all three)."""
     def has_permission(self, request, view):
         return super().has_permission(request, view) and request.user.role in ("PATIENT", "RECEPTIONIST", "DOCTOR", "HOSPITAL")
+
+
+class IsValidator(IsFullScope):
+    """Who may validate patients (legacy approvePatientForCaseSheet approverRole): hospital, receptionist, lab, pharmacy."""
+    def has_permission(self, request, view):
+        return super().has_permission(request, view) and request.user.role in ("RECEPTIONIST", "HOSPITAL", "LAB", "PHARMACY")
+
+
+class IsLabOrPharmacy(IsFullScope):
+    """Laboratory / pharmacy admin and their staff (order screens)."""
+    def has_permission(self, request, view):
+        return super().has_permission(request, view) and request.user.role in ("LAB", "LAB_STAFF", "PHARMACY", "PHARMACY_STAFF")
+
+
+class IsLabOrPharmacyAdmin(IsFullScope):
+    def has_permission(self, request, view):
+        return super().has_permission(request, view) and request.user.role in ("LAB", "PHARMACY")
+
+
+class IsPatientValidator(IsFullScope):
+    """Who may validate patients / request changes (legacy temporary-patients-list in hospital, reception, lab, pharmacy)."""
+    def has_permission(self, request, view):
+        return super().has_permission(request, view) and request.user.role in ("RECEPTIONIST", "HOSPITAL", "LAB", "PHARMACY")
+
+
+class IsOrgUser(IsFullScope):
+    """Laboratory / pharmacy admin or their staff."""
+    def has_permission(self, request, view):
+        return super().has_permission(request, view) and request.user.role in ("LAB", "LAB_STAFF", "PHARMACY", "PHARMACY_STAFF")
+
+
+class IsOrgAdmin(IsFullScope):
+    def has_permission(self, request, view):
+        return super().has_permission(request, view) and request.user.role in ("LAB", "PHARMACY")

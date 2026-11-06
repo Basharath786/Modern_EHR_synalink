@@ -11,7 +11,7 @@ ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", "localhost
 
 # NOTE: django.contrib.auth/admin/sessions are intentionally NOT installed, so
 # migrate never creates extra tables inside your existing EHR database.
-INSTALLED_APPS = ["corsheaders", "rest_framework", "accounts", "patient", "booking", "doctor", "reception", "hospital", "admins"]
+INSTALLED_APPS = ["corsheaders", "rest_framework", "accounts", "patient", "booking", "doctor", "reception", "hospital", "admins", "labpharm"]
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
@@ -24,9 +24,9 @@ WSGI_APPLICATION = "ehr_backend.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": os.getenv("DB_NAME", "synalink"),
+        "NAME": os.getenv("DB_NAME", "ehr"),
         "USER": os.getenv("DB_USER", "root"),
-        "PASSWORD": os.getenv("DB_PASSWORD", "root"),
+        "PASSWORD": os.getenv("DB_PASSWORD", ""),
         "HOST": os.getenv("DB_HOST", "127.0.0.1"),
         "PORT": os.getenv("DB_PORT", "3306"),
         "OPTIONS": {"charset": "utf8mb4"},
@@ -78,3 +78,12 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 8 * 1024 * 1024
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")      # used in "set your password" mails
 SUPER_ADMIN_ID = os.getenv("SUPER_ADMIN_ID", "basharat.sultana@mepstra.com")  # legacy setup.properties "superadmin"
 PENDING_UPLOAD_DIR = BASE_DIR / os.getenv("PENDING_UPLOAD_DIR", "uploads/pending")  # ID proofs waiting for patient approval
+
+# Phase 6 - integrations
+WHATSAPP_ID_CAMPAIGN = os.getenv("WHATSAPP_ID_CAMPAIGN", "Create_user_idss")
+WHATSAPP_EXPIRED_CAMPAIGN = os.getenv("WHATSAPP_EXPIRED_CAMPAIGN", "password_expired_all_portals")
+CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
+STATIC_ROOT = BASE_DIR / "staticfiles"
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https") if os.getenv("BEHIND_HTTPS_PROXY", "False").lower() == "true" else None
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()]
+STATIC_URL = "static/"

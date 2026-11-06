@@ -103,7 +103,7 @@ export function LabRecords() {
         <div className="table-wrap tight"><table className="rx"><thead><tr><th>Test</th><th>Status</th><th>Repeat</th><th>Report</th><th /></tr></thead>
           <tbody>{o.items.map((l, i) => <tr key={i}><td><b>{l.lab_test_name}</b>{l.emergency_test === "YES" && <> <Badge tone="red">Urgent</Badge></>}{l.lab_cancel_reason && <p className="muted small">{l.lab_cancel_reason}</p>}</td>
             <td><Badge tone={LAB[l.status] || "gray"}>{l.status}</Badge></td><td>{l.repeat_test}</td>
-            <td>{l.has_report ? <button className="btn ghost sm" onClick={() => openFile(`patient/lab-orders/report?apnt_id=${l.apnt_id}&order_id=${l.order_id}${amp}`)}>View</button> : "—"}</td>
+            <td>{l.has_report ? <button className="btn ghost sm" onClick={() => openFile(`patient/lab-orders/report?apnt_id=${l.apnt_id}&order_id=${l.order_id}&test=${encodeURIComponent(l.lab_test_name)}${amp}`)}>View</button> : "—"}</td>
             <td>{l.repeat_test === "YES" && <button className="btn primary sm" onClick={() => setSend(l)}>Send order</button>}</td></tr>)}</tbody></table></div>
       </section>))}</div>
     {send && <SendOrder kind="lab" item={send} forId={cur.child ? cur.id : undefined} onClose={() => setSend(null)} onDone={(t) => { setSend(null); setMsg(t); res.reload(); }} />}

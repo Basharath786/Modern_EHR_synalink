@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views
+from . import public, views
 
 urlpatterns = [
     # internal admin + super admin review of hospitals / labs / pharmacies
@@ -31,4 +31,13 @@ urlpatterns = [
     path("public/reference", views.reference),
     path("public/register/hospital", views.register_hospital),
     path("public/register/internal-admin", views.register_internal_admin),
+    # Phase 6
+    path("public/stats", public.stats),
+    path("public/directory/<str:kind>", public.directory),
+    path("public/registration-status", public.reg_status),
+    path("public/registration-status/code", public.reg_send_code),
+    path("public/registration-status/verify", public.reg_verify),
+    path("public/registration-status/update", public.reg_update),
+    path("superadmin/integrations", public.integrations),
+    path("superadmin/integrations/test", public.integrations_test),
 ]

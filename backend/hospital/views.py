@@ -12,7 +12,7 @@ from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 
 from accounts import mailer
-from accounts.authn import IsHospital
+from accounts.authn import IsDesk, IsHospital
 from accounts.crypto import encrypt_password
 from accounts.db import one, rows, run
 from accounts.entities import SPECIALITIES, Form, blob, detail, file_field, listing, new_id, random_password
@@ -28,7 +28,16 @@ APPT_TYPES = ["consult", "followup", "referral_appointment", "completed", "cance
 
 
 def _hid(request):
+    """Hospital of the logged-in hospital admin, or of the receptionist (read-only lists)."""
+    if request.user.role == "RECEPTIONIST":
+        return (one("SELECT hospital_id FROM receptionist WHERE permanentid=%s", [request.user.permanent_id]) or {}).get("hospital_id")
     return request.user.permanent_id
+
+
+def _admin_only(request):
+    if request.user.role != "HOSPITAL":
+        return Response({"status": "forbidden"}, status=403)
+    return None
 
 
 def _hospital(request):
@@ -77,7 +86,9 @@ def _dept_names(h):
 @api_view(["GET", "POST"])
 @permission_classes([IsHospital])
 def departments(request):
-    h = _hospital(request)
+    if request.method == "POST" and _admin_only(request):
+        return _admin_only(request)
+    h = one("SELECT permanentid, hospital_name, specialities_list, hospital_email FROM hospital WHERE permanentid=%s", [_hid(request)]) or {}
     if request.method == "GET":
         mine = [x.strip() for x in (h.get("specialities_list") or "").split(",") if x.strip()]
         taken = set(_dept_names(h["permanentid"]))
@@ -125,7 +136,7 @@ def staff(request, kind):
     if kind not in STAFF:
         return Response({"status": "not_found"}, status=404)
     if request.method == "POST":
-        return _register(request, kind)
+        return _admin_only(request) or _register(request, kind)
     items = rows(f"SELECT {SHORT[kind]} FROM {kind} WHERE hospital_id=%s ORDER BY date_time DESC", [_hid(request)])
     for i in items:
         i["password_set"] = bool((one("SELECT pswrd FROM login WHERE permanentid=%s", [i["permanentid"]]) or {}).get("pswrd"))
@@ -262,6 +273,8 @@ def _register(request, kind):
         run("INSERT INTO login (permanentid, pswrd, isdefault_password, systemLoginTime, pswrd_changed_time, failed_attempt, account_locked, lock_time) "
             "VALUES (%s,'','YES',NOW(),NOW(),0,'NO',0)", [pid])
     label = kind.upper()
+    from accounts import whatsapp
+    whatsapp.new_permanent_id(c["mobno"], c["fullname"] if kind == "receptionist" else f"{c['fname']} {c['lname']}", pid)
     if kind == "nurse":
         mailer.send(h.get("hospital_email"), "Nurse registered", "Nurse registered",
                     [f"Nurse <b>{mailer.e(c['fname'])} {mailer.e(c['lname'])}</b> ({pid}) was registered in {mailer.e(c['deptname'])}."])

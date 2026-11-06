@@ -8,4 +8,5 @@ urlpatterns = [
     path("api/v1/", include("reception.urls")),
     path("api/v1/", include("hospital.urls")),
     path("api/v1/", include("admins.urls")),
+    path("api/v1/", include("labpharm.urls")),
 ]

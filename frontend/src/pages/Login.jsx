@@ -32,6 +32,8 @@ export default function Login() {
     else if (data.status === "temp_password") { signIn(data.token, data.user, "change_password"); nav("/change-password"); }
     else if (data.status === "otp_required") { signIn(data.token, data.user, "otp"); nav("/verify-otp"); }
     else if (data.status === "password_not_set") setNeedSet(data.permanentid);
+    else if (data.status === "password_error" && data.attempts_left != null) setErr(`Incorrect password. Login attempts remaining: ${data.attempts_left}.`);
+    else if (["password_expired", "temp_password_expired"].includes(data.status)) { setErr(STATUS_MESSAGES[data.status]); setNeedSet(id.trim().toUpperCase()); }
     else setErr(STATUS_MESSAGES[data.status] || "Something went wrong. Please try again.");
   }
 
@@ -59,8 +61,8 @@ export default function Login() {
           {notice && <div className="alert info">{notice}</div>}
           {err && <div className="alert error" role="alert">{err}</div>}
           {info && <div className="alert info">{info}</div>}
-          {needSet && <div className="alert info">This account has no password yet. After approval you set it once with a code sent to your registered e-mail / WhatsApp.
-            <div className="row" style={{ justifyContent: "flex-start" }}><Link className="btn primary sm" to={`/set-password?id=${needSet}`}>Set my password</Link></div></div>}
+          {needSet && <div className="alert info">Set (or reset) your password with a one-time code sent to your registered e-mail / WhatsApp.
+            <div className="row" style={{ justifyContent: "flex-start" }}><Link className="btn primary sm" to={`/set-password?id=${needSet}`}>Set / reset password</Link></div></div>}
 
           <label className="field">
             <span>User ID {roleLabel && <em className="chip">{roleLabel}</em>}</span>
@@ -80,7 +82,7 @@ export default function Login() {
             <Link className="link small" to={`/set-password${id ? `?id=${id}` : ""}`}>Forgot / set password?</Link>
             <Link className="link small" to="/super-admin">Super admin</Link>
           </div>
-          <p className="muted small" style={{ textAlign: "center" }}>New here? <Link className="link" to="/register/hospital">Register a hospital</Link> · <Link className="link" to="/register/internal-admin">Internal admin sign-up</Link></p>
+          <p className="muted small" style={{ textAlign: "center" }}>New here? <Link className="link" to="/register/patient">Patient sign-up</Link> · <Link className="link" to="/register/hospital">Hospital</Link> · <Link className="link" to="/register/lab">Laboratory</Link> · <Link className="link" to="/register/pharmacy">Pharmacy</Link> · <Link className="link" to="/register/internal-admin">Internal admin</Link></p>
         </form>
       </section>
     </div>

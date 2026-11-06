@@ -39,17 +39,18 @@ export function Field({ label, error, children, hint, wide }) {
   );
 }
 
-export function GeoFields({ form, labels = {} }) {
+export function GeoFields({ form, labels = {}, optional = false }) {
+  const st = optional ? "" : " *";
   const ref = useReference();
   const { f, setF, errors, bind } = form;
   const states = ref ? Object.keys(ref.states) : [];
   const cities = ref && f.state ? ref.states[f.state] || [] : [];
   return (<>
-    <Field label="Country *" error={errors.country}><select {...bind("country")}><option value="">Select</option><option>India</option></select></Field>
-    <Field label="State *" error={errors.state}>
+    <Field label={`Country${st}`} error={errors.country}><select {...bind("country")}><option value="">Select</option><option>India</option></select></Field>
+    <Field label={`State${st}`} error={errors.state}>
       <select name="state" value={f.state || ""} onChange={(e) => setF((c) => ({ ...c, state: e.target.value, city: "" }))}><option value="">Select</option>{states.map((s) => <option key={s}>{s}</option>)}</select></Field>
-    <Field label={labels.city || "City / District *"} error={errors.city}><select {...bind("city")}><option value="">Select</option>{cities.map((s) => <option key={s}>{s}</option>)}</select></Field>
-    <Field label="Zip code *" error={errors.zipcode}><input inputMode="numeric" {...bind("zipcode", digits(6))} /></Field>
+    <Field label={labels.city || `City / District${st}`} error={errors.city}><select {...bind("city")}><option value="">Select</option>{cities.map((s) => <option key={s}>{s}</option>)}</select></Field>
+    <Field label={`Zip code${st}`} error={errors.zipcode}><input inputMode="numeric" {...bind("zipcode", digits(6))} /></Field>
   </>);
 }
 

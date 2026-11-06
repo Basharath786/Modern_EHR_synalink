@@ -1,0 +1,5 @@
+.env
+keystore/
+uploads/
+__pycache__/
+*.sql

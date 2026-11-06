@@ -20,7 +20,7 @@ from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 
 from accounts import mailer
-from accounts.authn import IsDesk
+from accounts.authn import IsPatientValidator as IsDesk, IsValidator
 from accounts.db import one, rows, run
 from accounts.entities import GEO, Form, detail, file_field, listing, new_id
 from accounts.setpw import set_password_link
@@ -39,10 +39,8 @@ LIST_COLS = "permanentid, fname, mname, lname, gender, dob, age, mobno, email, c
 def approver(request):
     """(id, role, display name) of the logged-in desk user."""
     pid, role = request.user.permanent_id, request.user.role
-    if role == "HOSPITAL":
-        r = one("SELECT hospital_name n FROM hospital WHERE permanentid=%s", [pid])
-    else:
-        r = one("SELECT fullname n FROM receptionist WHERE permanentid=%s", [pid])
+    table, col = {"HOSPITAL": ("hospital", "hospital_name"), "LAB": ("lab", "labname"), "PHARMACY": ("pharmacy", "pharmacy_name")}.get(role, ("receptionist", "fullname"))
+    r = one(f"SELECT {col} n FROM {table} WHERE permanentid=%s", [pid])
     return pid, role, (r or {}).get("n") or pid
 
 
@@ -62,7 +60,7 @@ def _approver_name(aid):
 
 
 @api_view(["GET"])
-@permission_classes([IsDesk])
+@permission_classes([IsValidator])
 def patients(request):
     q = str(request.GET.get("q", "")).strip()
     flt = request.GET.get("filter", "unvalidated")
@@ -79,7 +77,7 @@ def patients(request):
 
 
 @api_view(["GET"])
-@permission_classes([IsDesk])
+@permission_classes([IsValidator])
 def patient_detail(request, pid):
     p = detail("patient", pid.upper())
     if not p:
@@ -105,14 +103,14 @@ def patient_detail(request, pid):
 
 
 @api_view(["GET"])
-@permission_classes([IsDesk])
+@permission_classes([IsValidator])
 def patient_govtid(request, pid):
     r = one("SELECT govtidfile f FROM patient WHERE permanentid=%s", [pid.upper()])
     return file_response((r or {}).get("f"), f"{pid}_govtid")
 
 
 @api_view(["POST"])
-@permission_classes([IsDesk])
+@permission_classes([IsValidator])
 def validate(request, pid):
     """Legacy approvePatientForCaseSheet."""
     pid = pid.upper()
@@ -169,7 +167,7 @@ def _clean_change(field, value, f):
 
 
 @api_view(["POST"])
-@permission_classes([IsDesk])
+@permission_classes([IsValidator])
 @parser_classes([MultiPartParser, FormParser, JSONParser])
 def change_request(request, pid):
     """Legacy requestPatientChange. Body: changes = {field: new value} (JSON or JSON string) and an
@@ -208,7 +206,7 @@ def change_request(request, pid):
         return Response({"status": "no_changes", "message": "Nothing was changed."}, status=400)
     aid, role, name = approver(request)
     labels = list(dict.fromkeys(d["label"] for d in details))
-    who = "Hospital" if role == "HOSPITAL" else "Hospital reception"
+    who = {"HOSPITAL": "Hospital", "LAB": "Laboratory", "PHARMACY": "Pharmacy"}.get(role, "Hospital reception")
     message = (f"{who} staff requested to update your details: {', '.join(labels)}. "
                "Please review and Approve or Reject. Nothing changes until you approve.")[:500]
     with transaction.atomic():
@@ -229,9 +227,9 @@ def change_request(request, pid):
 
 # ------------------------------------------------------------------ temporary registrations (patient_temp)
 @api_view(["GET"])
-@permission_classes([IsDesk])
+@permission_classes([IsValidator])
 def temp_patients(request):
-    items = listing("patient_temp", "COALESCE(status,'') <> 'REJECTED'", order="date_time DESC")
+    items = listing("patient_temp", "COALESCE(status,'') NOT IN ('REJECTED','OTP')", order="date_time DESC")
     for i in items:
         h = one("SELECT status, reason_for_hold, hold_attempt, approved_by FROM temp_user_hold_info WHERE temp_id=%s", [i["temp_id"]])
         i["hold"] = h
@@ -239,7 +237,7 @@ def temp_patients(request):
 
 
 @api_view(["GET"])
-@permission_classes([IsDesk])
+@permission_classes([IsValidator])
 def temp_patient_file(request, temp_id):
     r = one("SELECT govtidfile f FROM patient_temp WHERE temp_id=%s", [temp_id])
     return file_response((r or {}).get("f"), f"{temp_id}_govtid")
@@ -250,7 +248,7 @@ def _temp(temp_id):
 
 
 @api_view(["POST"])
-@permission_classes([IsDesk])
+@permission_classes([IsValidator])
 def temp_hold(request, temp_id):
     """Legacy updateInvalidPatientInfo: status HOLD + reason, at most 3 holds."""
     t = _temp(temp_id)
@@ -279,7 +277,7 @@ def temp_hold(request, temp_id):
 
 
 @api_view(["POST"])
-@permission_classes([IsDesk])
+@permission_classes([IsValidator])
 def temp_reject(request, temp_id):
     """Legacy rejectInvalidPatient: only after earlier holds; the temporary record is deleted."""
     t = _temp(temp_id)
@@ -300,7 +298,7 @@ def temp_reject(request, temp_id):
 
 
 @api_view(["POST"])
-@permission_classes([IsDesk])
+@permission_classes([IsValidator])
 def temp_validate(request, temp_id):
     """Legacy validate(PATIENT): copy patient_temp into patient with a new PAT id, add the login row,
     remove the temporary rows. The account is then activated with "Set password"."""

@@ -2,7 +2,7 @@ from django.conf import settings
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.response import Response
 
-from . import services
+from . import mailer, services
 from .authn import IsAuthenticatedUser, make_token
 from .roles import ROLE_PORTAL, ROLE_TABLES, detect_role
 
@@ -58,6 +58,12 @@ def login_view(request):
             return Response({"status": "account_inactive"}, status=401)
 
     result = services.authenticate(pid, password, role)
+    if result == "password_error":                         # legacy allUserLoginStatus: "Login attempts remaining : N"
+        failed = (services._one("SELECT failed_attempt FROM login WHERE permanentid=%s", [pid]) or {}).get("failed_attempt") or 0
+        left = max(services.MAX_FAILED_BEFORE_RESET - failed, 0)
+        return Response({"status": "locked_account" if left == 0 else "password_error", "attempts_left": left}, status=401)
+    if result == "password_expired_non_patient":
+        _expired_notice(pid, role)
     if result in FAIL_STATUS:
         return Response({"status": FAIL_STATUS[result]}, status=401)
 
@@ -71,6 +77,7 @@ def login_view(request):
 
     if (result or "").upper() == "NO":
         if not services.is_user_password_valid(pid, role):
+            _expired_notice(pid, role)
             return Response({"status": "password_expired"}, status=401)
         if role == "PATIENT" and not settings.DEV_SKIP_PATIENT_OTP:
             # Password OK -> patient must now verify the OTP (see patient/otp.py)
@@ -95,7 +102,28 @@ def change_password_view(request):
     ok, err = services.change_password(request.user.permanent_id, request.user.role, cur, new)
     if not ok:
         return Response({"status": err}, status=400)
+    from .setpw import account
+    _, acc = account(request.user.permanent_id)
+    mailer.send((acc or {}).get("email"), "Your Cobalt EHR password was changed", "Password changed", [
+        f"The password for <b>{mailer.e(request.user.permanent_id)}</b> was changed.", "If this was not you, reset it from the sign-in page and contact your admin."])
     return Response({"status": "password_changed"})
+
+
+def _expired_notice(pid, role):
+    """Legacy LoginImpl: WhatsApp 'password_expired_all_portals' (+ e-mail) when an expired password is used.
+    Sent at most once a day per account so repeated attempts don't spam the user."""
+    from django.core.cache import cache
+
+    from . import whatsapp
+    from .setpw import account, set_password_link
+    if not cache.add(f"pwexp:{pid}", 1, 86_400):
+        return
+    _, acc = account(pid)
+    if not acc:
+        return
+    whatsapp.password_expired(acc.get("mobile"), pid)
+    mailer.send(acc.get("email"), "Your Cobalt EHR password has expired", "Password expired", [
+        f"The password for <b>{mailer.e(pid)}</b> has expired.", f"<a href='{set_password_link(pid)}'>Reset your password</a> to continue."])
 
 
 @api_view(["GET"])
